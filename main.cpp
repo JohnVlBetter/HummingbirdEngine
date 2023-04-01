@@ -8,5 +8,5 @@ int main(int argc,char** argv){
     swap(a,b);
     cout<<a<<b<<endl;
     cout<<a<<b<<endl;
-    return 1;
+    return 2;
 }
