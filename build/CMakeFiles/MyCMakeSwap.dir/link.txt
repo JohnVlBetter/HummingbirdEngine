@@ -1,3 +1,0 @@
-E:\CMake\bin\cmake.exe -E rm -f CMakeFiles\MyCMakeSwap.dir/objects.a
-E:\mingw64\bin\ar.exe qc CMakeFiles\MyCMakeSwap.dir/objects.a @CMakeFiles\MyCMakeSwap.dir\objects1.rsp
-E:\mingw64\bin\g++.exe -g -Wl,--whole-archive CMakeFiles\MyCMakeSwap.dir/objects.a -Wl,--no-whole-archive -o MyCMakeSwap.exe -Wl,--out-implib,libMyCMakeSwap.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\MyCMakeSwap.dir\linkLibs.rsp
