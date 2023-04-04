@@ -9,6 +9,8 @@
 			"label": "cmake",
 			"command": "cmake",
 			"args": [
+				//"-G",
+				//"\"MinGW Makefiles\"",
 				".."
 			]
 		},
