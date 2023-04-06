@@ -28,10 +28,10 @@ message("${GLFW_LIB}")
 aux_source_directory (src SRC_LIST)
 
 add_executable(${PROJECT_NAME} ${SRC_LIST} ${GLM_SRC_LIST})
-link_directories(${GLFW_LIB} ${VULKAN_1_LIB})
+#link_directories(${GLFW_LIB} ${VULKAN_1_LIB})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${GLFW_DIR_PATH}/lib-mingw-w64/glfw3.dll)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${VULKAN_1_LIB})
-#
+
 #target_include_directories(${PROJECT_NAME} PRIVATE ${GLFW_DIR_PATH}/include)
 #target_include_directories(${PROJECT_NAME} PRIVATE ${VK_SDK_INCLUDE})
 
