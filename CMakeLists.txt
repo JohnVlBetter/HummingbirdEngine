@@ -25,7 +25,7 @@ FIND_LIBRARY(GLFW_LIB glfw3dll.lib ${GLFW_DIR_PATH}/lib-mingw-w64)
 message("${GLFW_LIB}")
 #set(GLFW_LIB_DIR_PATH "${GLFW_DIR_PATH}/lib-mingw-w64")
 
-aux_source_directory (src SRC_LIST)
+aux_source_directory (src/scripts SRC_LIST)
 
 add_executable(${PROJECT_NAME} ${SRC_LIST} ${GLM_SRC_LIST})
 #link_directories(${GLFW_LIB} ${VULKAN_1_LIB})
