@@ -12,6 +12,7 @@
 #include <optional>
 #include <set>
 #include <fstream>
+#include <filesystem>
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -518,14 +519,14 @@ private:
     }
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+        //std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
         return VK_FALSE;
     }
 
     void CreateGraphicsPipeline() {
-        auto vertShaderCode = ReadFile("../shaders/vert.spv");
-        auto fragShaderCode = ReadFile("../shaders/frag.spv");
+        auto vertShaderCode = ReadFile("src/shaders/vert.spv");
+        auto fragShaderCode = ReadFile("src/shaders/frag.spv");
 
         VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);
@@ -564,6 +565,8 @@ private:
 
     static std::vector<char> ReadFile(const std::string& filename) {
         std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+        //std::cout<<std::filesystem::current_path()<<std::endl;
 
         if (!file.is_open()) {
             throw std::runtime_error("Failed to open file: "+filename+"!");
