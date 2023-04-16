@@ -15,6 +15,10 @@ aux_source_directory (${GLM_DIR_PATH} GLM_SRC_LIST)
 set(STB_IMAGE_DIR_PATH "${THIRD_PARTY_PATH}/stb_image")
 include_directories (${STB_IMAGE_DIR_PATH})
 
+#tiny_obj_loader
+set(TINY_OBJ_LOADER_DIR_PATH "${THIRD_PARTY_PATH}/tiny_obj_loader")
+include_directories (${TINY_OBJ_LOADER_DIR_PATH})
+
 #vulkan
 set(VK_SDK_PATH "F:/Vulkan")
 set(VK_SDK_INCLUDE ${VK_SDK_PATH}/Include)
