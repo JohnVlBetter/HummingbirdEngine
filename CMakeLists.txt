@@ -11,6 +11,10 @@ set(GLM_DIR_PATH "${THIRD_PARTY_PATH}/glm")
 include_directories (${GLM_DIR_PATH})
 aux_source_directory (${GLM_DIR_PATH} GLM_SRC_LIST)
 
+#stb_image
+set(STB_IMAGE_DIR_PATH "${THIRD_PARTY_PATH}/stb_image")
+include_directories (${STB_IMAGE_DIR_PATH})
+
 #vulkan
 set(VK_SDK_PATH "F:/Vulkan")
 set(VK_SDK_INCLUDE ${VK_SDK_PATH}/Include)
