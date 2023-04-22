@@ -23,6 +23,14 @@ include_directories (${TINY_OBJ_LOADER_DIR_PATH})
 set(TINY_GLTF_DIR_PATH "${THIRD_PARTY_PATH}/tiny_gltf")
 include_directories (${TINY_GLTF_DIR_PATH})
 
+#imgui
+set(IMGUI_DIR_PATH "${THIRD_PARTY_PATH}/imgui")
+include_directories (${IMGUI_DIR_PATH})
+
+#gli
+set(GLI_DIR_PATH "${THIRD_PARTY_PATH}/gli/gli")
+include_directories (${GLI_DIR_PATH})
+
 #vulkan
 set(VK_SDK_PATH "F:/Vulkan")
 set(VK_SDK_INCLUDE ${VK_SDK_PATH}/Include)
