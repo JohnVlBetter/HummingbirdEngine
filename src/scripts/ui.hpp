@@ -1,11 +1,3 @@
-/*
-* Vulkan Example - Physical based rendering a glTF 2.0 model with image based lighting
-*
-* Copyright (C) 2018 by Sascha Willems - www.saschawillems.de
-*
-* This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
-*/
-
 #include <vector>
 #include <array>
 #include <map>
@@ -15,9 +7,6 @@
 #include "VulkanDevice.hpp"
 #include "VulkanUtils.hpp"
 #include "VulkanTexture.hpp"
-#if defined(__ANDROID__)
-#include <android/asset_manager.h>
-#endif
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -54,20 +43,7 @@ public:
 		unsigned char* fontData;
 		int texWidth, texHeight;
 
-#if defined(__ANDROID__)
-		float scale = (float)vks::android::screenDensity / (float)ACONFIGURATION_DENSITY_MEDIUM;
-		AAsset* asset = AAssetManager_open(androidApp->activity->assetManager, "Roboto-Medium.ttf", AASSET_MODE_STREAMING);
-		assert(asset);
-		size_t size = AAsset_getLength(asset);
-		assert(size > 0);
-		char *fontAsset = new char[size];
-		AAsset_read(asset, fontAsset, size);
-		AAsset_close(asset);
-		io.Fonts->AddFontFromMemoryTTF(fontAsset, size, 14.0f * scale);
-		delete[] fontAsset;
-#else
 		io.Fonts->AddFontFromFileTTF("./../data/Roboto-Medium.ttf", 16.0f);
-#endif
 		io.Fonts->GetTexDataAsRGBA32(&fontData, &texWidth, &texHeight);
 		fontTexture.loadFromBuffer(fontData, texWidth * texHeight * 4 * sizeof(char), VK_FORMAT_R8G8B8A8_UNORM, texWidth, texHeight, vulkanDevice, queue);
 

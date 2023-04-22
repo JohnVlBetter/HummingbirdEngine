@@ -54,27 +54,7 @@ namespace vks
 			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 		{
-#if defined(__ANDROID__)
-			// Textures are stored inside the apk on Android (compressed)
-			// So they need to be loaded via the asset manager
-			AAsset* asset = AAssetManager_open(androidApp->activity->assetManager, filename.c_str(), AASSET_MODE_STREAMING);
-			if (!asset) {
-				LOGE("Could not load texture %s", filename.c_str());
-				exit(-1);
-			}
-			size_t size = AAsset_getLength(asset);
-			assert(size > 0);
-
-			void *textureData = malloc(size);
-			AAsset_read(asset, textureData, size);
-			AAsset_close(asset);
-
-			gli::texture2d tex2D(gli::load((const char*)textureData, size));
-
-			free(textureData);
-#else
 			gli::texture2d tex2D(gli::load(filename.c_str()));
-#endif		
 			assert(!tex2D.empty());
 
 			this->device = device;
@@ -432,27 +412,7 @@ namespace vks
 			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 		{
-#if defined(__ANDROID__)
-			// Textures are stored inside the apk on Android (compressed)
-			// So they need to be loaded via the asset manager
-			AAsset* asset = AAssetManager_open(androidApp->activity->assetManager, filename.c_str(), AASSET_MODE_STREAMING);
-			if (!asset) {
-				LOGE("Could not load texture %s", filename.c_str());
-				exit(-1);
-			}
-			size_t size = AAsset_getLength(asset);
-			assert(size > 0);
-
-			void *textureData = malloc(size);
-			AAsset_read(asset, textureData, size);
-			AAsset_close(asset);
-
-			gli::texture_cube texCube(gli::load((const char*)textureData, size));
-
-			free(textureData);
-#else
 			gli::texture_cube texCube(gli::load(filename));
-#endif	
 			assert(!texCube.empty());
 
 			this->device = device;

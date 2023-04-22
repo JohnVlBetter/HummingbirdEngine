@@ -1,28 +1,9 @@
 #pragma once
 
-#ifdef _WIN32
 #pragma comment(linker, "/subsystem:windows")
 #include <windows.h>
 #include <fcntl.h>
 #include <io.h>
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-#include <android/native_activity.h>
-#include <android/asset_manager.h>
-#include <android_native_app_glue.h>
-#include <sys/system_properties.h>
-#include "VulkanAndroid.h"
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-#include <wayland-client.h>
-#elif defined(_DIRECT2DISPLAY)
-//
-#elif defined(VK_USE_PLATFORM_XCB_KHR)
-#include <xcb/xcb.h>
-#elif defined(VK_USE_PLATFORM_MACOS_MVK)
-#include <Cocoa/Cocoa.h>
-#include <Carbon/Carbon.h>
-#include <QuartzCore/CAMetalLayer.h>
-#include <CoreVideo/CVDisplayLink.h>
-#endif
 
 #include <iostream>
 #include <chrono>
@@ -128,106 +109,11 @@ public:
 		bool middle = false;
 	} mouseButtons;
 
-	// OS specific 
-#if defined(_WIN32)
 	HWND window;
 	HINSTANCE windowInstance;
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-	// true if application has focused, false if moved to background
-	bool focused = false;
-	std::string androidProduct;
-	struct TouchPoint {
-	    int32_t id;
-	    float x;
-	    float y;
-	    bool down = false;
-	};
-	float pinchDist = 0.0f;
-	std::array<TouchPoint, 2> touchPoints;
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-	wl_display *display = nullptr;
-	wl_registry *registry = nullptr;
-	wl_compositor *compositor = nullptr;
-	wl_shell *shell = nullptr;
-	wl_seat *seat = nullptr;
-	wl_pointer *pointer = nullptr;
-	wl_keyboard *keyboard = nullptr;
-	wl_surface *surface = nullptr;
-	wl_shell_surface *shell_surface = nullptr;
-	bool quit = false;
 
-#elif defined(_DIRECT2DISPLAY)
-	bool quit = false;
-#elif defined(VK_USE_PLATFORM_XCB_KHR)
-	bool quit = false;
-	xcb_connection_t *connection;
-	xcb_screen_t *screen;
-	xcb_window_t window;
-	xcb_intern_atom_reply_t *atom_wm_delete_window;
-#elif defined(VK_USE_PLATFORM_MACOS_MVK)
-	NSWindow* window;
-#endif
-
-#if defined(_WIN32)
 	HWND setupWindow(HINSTANCE hinstance, WNDPROC wndproc);
 	void handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-	static int32_t handleAppInput(struct android_app* app, AInputEvent* event);
-	static void handleAppCommand(android_app* app, int32_t cmd);
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-	wl_shell_surface *setupWindow();
-	void initWaylandConnection();
-	static void registryGlobalCb(void *data, struct wl_registry *registry,
-			uint32_t name, const char *interface, uint32_t version);
-	void registryGlobal(struct wl_registry *registry, uint32_t name,
-			const char *interface, uint32_t version);
-	static void registryGlobalRemoveCb(void *data, struct wl_registry *registry,
-			uint32_t name);
-	static void seatCapabilitiesCb(void *data, wl_seat *seat, uint32_t caps);
-	void seatCapabilities(wl_seat *seat, uint32_t caps);
-	static void pointerEnterCb(void *data, struct wl_pointer *pointer,
-			uint32_t serial, struct wl_surface *surface, wl_fixed_t sx,
-			wl_fixed_t sy);
-	static void pointerLeaveCb(void *data, struct wl_pointer *pointer,
-			uint32_t serial, struct wl_surface *surface);
-	static void pointerMotionCb(void *data, struct wl_pointer *pointer,
-			uint32_t time, wl_fixed_t sx, wl_fixed_t sy);
-	void pointerMotion(struct wl_pointer *pointer,
-			uint32_t time, wl_fixed_t sx, wl_fixed_t sy);
-	static void pointerButtonCb(void *data, struct wl_pointer *wl_pointer,
-			uint32_t serial, uint32_t time, uint32_t button, uint32_t state);
-	void pointerButton(struct wl_pointer *wl_pointer,
-			uint32_t serial, uint32_t time, uint32_t button, uint32_t state);
-	static void pointerAxisCb(void *data, struct wl_pointer *wl_pointer,
-			uint32_t time, uint32_t axis, wl_fixed_t value);
-	void pointerAxis(struct wl_pointer *wl_pointer,
-			uint32_t time, uint32_t axis, wl_fixed_t value);
-	static void keyboardKeymapCb(void *data, struct wl_keyboard *keyboard,
-			uint32_t format, int fd, uint32_t size);
-	static void keyboardEnterCb(void *data, struct wl_keyboard *keyboard,
-			uint32_t serial, struct wl_surface *surface, struct wl_array *keys);
-	static void keyboardLeaveCb(void *data, struct wl_keyboard *keyboard,
-			uint32_t serial, struct wl_surface *surface);
-	static void keyboardKeyCb(void *data, struct wl_keyboard *keyboard,
-			uint32_t serial, uint32_t time, uint32_t key, uint32_t state);
-	void keyboardKey(struct wl_keyboard *keyboard,
-			uint32_t serial, uint32_t time, uint32_t key, uint32_t state);
-	static void keyboardModifiersCb(void *data, struct wl_keyboard *keyboard,
-			uint32_t serial, uint32_t mods_depressed, uint32_t mods_latched,
-			uint32_t mods_locked, uint32_t group);
-
-#elif defined(_DIRECT2DISPLAY)
-//
-#elif defined(VK_USE_PLATFORM_XCB_KHR)
-	xcb_window_t setupWindow();
-	void initxcbConnection();
-	void handleEvent(const xcb_generic_event_t *event);
-#elif defined(VK_USE_PLATFORM_MACOS_MVK)
-	NSWindow* setupWindow();
-	void mouseDragged(float x, float y);
-	void windowWillResize(float x, float y);
-	void windowDidResize();
-#endif
 
 	VulkanExampleBase();
 	virtual ~VulkanExampleBase();
