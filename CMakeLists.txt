@@ -1,63 +1,132 @@
-cmake_minimum_required(VERSION 3.2)
-project(HummingbirdEngine)
-project(${PROJECT_NAME} VERSION 1.0.0)
-set(CMAKE_CXX_STANDARD 17)
-#set(CMAKE_CXX_STANDARD_REQUIRED ON)
+cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+cmake_policy(VERSION 2.8)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
-set(THIRD_PARTY_PATH "${PROJECT_SOURCE_DIR}/3rd")
+set(NAME Vulkan-glTF-PBR)
 
-#glm
-set(GLM_DIR_PATH "${THIRD_PARTY_PATH}/glm")
-include_directories (${GLM_DIR_PATH})
-aux_source_directory (${GLM_DIR_PATH} GLM_SRC_LIST)
+project(${NAME})
 
-#stb_image
-set(STB_IMAGE_DIR_PATH "${THIRD_PARTY_PATH}/stb_image")
-include_directories (${STB_IMAGE_DIR_PATH})
+include_directories(external)
+include_directories(external/glm)
+include_directories(external/gli)
+include_directories(external/imgui)
+include_directories(external/tinygltf)
+include_directories(base)
 
-#tiny_obj_loader
-set(TINY_OBJ_LOADER_DIR_PATH "${THIRD_PARTY_PATH}/tiny_obj_loader")
-include_directories (${TINY_OBJ_LOADER_DIR_PATH})
+OPTION(USE_D2D_WSI "Build the project using Direct to Display swapchain" OFF)
+OPTION(USE_WAYLAND_WSI "Build the project using Wayland swapchain" OFF)
 
-#tiny_gltf
-set(TINY_GLTF_DIR_PATH "${THIRD_PARTY_PATH}/tiny_gltf")
-include_directories (${TINY_GLTF_DIR_PATH})
+set(RESOURCE_INSTALL_DIR "" CACHE PATH "Path to install resources to (leave empty for running uninstalled)")
 
-#imgui
-set(IMGUI_DIR_PATH "${THIRD_PARTY_PATH}/imgui")
-include_directories (${IMGUI_DIR_PATH})
+# Enable Draco mesh compression if source and library are present
+IF(EXISTS ${CMAKE_SOURCE_DIR}/external/draco/draco_features.h)
+  message(STATUS "Draco source and library found at " ${CMAKE_SOURCE_DIR}/external/draco)
+  add_definitions(-DTINYGLTF_ENABLE_DRACO)
+  include_directories(external/draco)
+  find_library(DRACO_DECODER_LIBRARY NAMES dracodec PATHS ${CMAKE_SOURCE_DIR}/libs/draco REQUIRED)
+  IF (EXISTS ${DRACO_DECODER_LIBRARY})
+	message(STATUS "Draco decoder library found at " ${DRACO_DECODER_LIBRARY})
+	message(STATUS "Draco mesh compression enabled")
+  ELSE()
+    message(FATAL_ERROR "Draco decoder library not found!")
+  ENDIF()
+ENDIF()
 
-#gli
-set(GLI_DIR_PATH "${THIRD_PARTY_PATH}/gli/gli")
-include_directories (${GLI_DIR_PATH})
+# Use FindVulkan module added with CMAKE 3.7
+if (NOT CMAKE_VERSION VERSION_LESS 3.7.0)
+	message(STATUS "Using module to find Vulkan")
+	find_package(Vulkan)
+endif()
 
-#vulkan
-set(VK_SDK_PATH "F:/Vulkan")
-set(VK_SDK_INCLUDE ${VK_SDK_PATH}/Include)
-include_directories(${VK_SDK_INCLUDE}) 
-FIND_LIBRARY(VULKAN_1_LIB vulkan-1 ${VK_SDK_PATH}/Lib)
-message("${VULKAN_1_LIB}")
+IF(UNIX AND NOT APPLE)
+    set(LINUX TRUE)
+ENDIF()
 
-#glfw
-set(GLFW_DIR_PATH "${THIRD_PARTY_PATH}/glfw")
-include_directories (${GLFW_DIR_PATH}/include)
-FIND_LIBRARY(GLFW_LIB glfw3dll.lib ${GLFW_DIR_PATH}/lib-mingw-w64)
-message("${GLFW_LIB}")
-#set(GLFW_LIB_DIR_PATH "${GLFW_DIR_PATH}/lib-mingw-w64")
+IF(WIN32)
+	IF (NOT Vulkan_FOUND)
+		find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS ${CMAKE_SOURCE_DIR}/libs/vulkan)
+		IF (Vulkan_LIBRARY)
+			set(Vulkan_FOUND ON)
+			MESSAGE("Using bundled Vulkan library version")
+		ENDIF()
+	ENDIF()
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
+ELSEIF(LINUX)
+	IF (NOT Vulkan_FOUND)
+		find_library(Vulkan_LIBRARY NAMES vulkan HINTS "$ENV{VULKAN_SDK}/lib" "${CMAKE_SOURCE_DIR}/libs/vulkan" REQUIRED)
+		IF (Vulkan_LIBRARY)
+			set(Vulkan_FOUND ON)
+			MESSAGE("Using bundled Vulkan library version")
+		ENDIF()
+	ENDIF()
+	find_package(Threads REQUIRED)
+	IF(USE_D2D_WSI)
+		MESSAGE("Using direct to display extension...")
+		add_definitions(-D_DIRECT2DISPLAY)
+	ELSEIF(USE_WAYLAND_WSI)
+		message("Using wayland extension...")
+		find_package(Wayland REQUIRED)
+		if (NOT WAYLAND_FOUND)
+			message(FATAL_ERROR "Wayland development package not found")
+		endif ()
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WAYLAND_KHR")
+		include_directories(${WAYLAND_INCLUDE_DIR})
+	ELSE(USE_D2D_WSI)
+		message("Using XCB extension...")
+		find_package(XCB REQUIRED)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_XCB_KHR")
+	ENDIF(USE_D2D_WSI)
+ELSEIF(APPLE)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_MACOS_MVK -DVK_EXAMPLE_XCODE_GENERATED")
+	# Todo : android?
+ENDIF(WIN32)
 
-aux_source_directory (src/scripts SRC_LIST)
+IF (NOT Vulkan_FOUND)
+	message(FATAL_ERROR "Could not find Vulkan library!")
+ELSE()
+	message(STATUS ${Vulkan_LIBRARY})
+ENDIF()
 
-add_executable(${PROJECT_NAME} ${SRC_LIST} ${GLM_SRC_LIST})
-#link_directories(${GLFW_LIB} ${VULKAN_1_LIB})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${GLFW_DIR_PATH}/lib-mingw-w64/glfw3.dll)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${VULKAN_1_LIB})
+# Set preprocessor defines
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNOMINMAX -D_USE_MATH_DEFINES")
 
-#target_include_directories(${PROJECT_NAME} PRIVATE ${GLFW_DIR_PATH}/include)
-#target_include_directories(${PROJECT_NAME} PRIVATE ${VK_SDK_INCLUDE})
+# Clang specific stuff
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch-enum")
+endif()
 
-# 复制 glfw3.dll 到编译目录下
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-    ${GLFW_DIR_PATH}/lib-mingw-w64/glfw3.dll
-    $<TARGET_FILE_DIR:${PROJECT_NAME}>/
-)
+add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+add_definitions(-std=c++11)
+
+file(GLOB SOURCE *.cpp )
+
+if(RESOURCE_INSTALL_DIR)
+	add_definitions(-DVK_EXAMPLE_DATA_DIR=\"${RESOURCE_INSTALL_DIR}/\")
+	install(DIRECTORY data/ DESTINATION ${RESOURCE_INSTALL_DIR}/)
+else()
+	add_definitions(-DVK_EXAMPLE_DATA_DIR=\"${CMAKE_SOURCE_DIR}/data/\")
+endif()
+
+# Compiler specific stuff
+IF(MSVC)
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+ELSEIF(APPLE)
+	if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fobjc-arc -ObjC++")
+	ELSE()
+		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fobjc-arc -xobjective-c++")
+	ENDIF()
+ENDIF(MSVC)
+
+IF(WIN32)
+	# Nothing here (yet)
+ELSEIF(APPLE)
+	link_libraries(${Vulkan_LIBRARY} "-framework AppKit" "-framework QuartzCore")
+ELSE(WIN32)
+	link_libraries(${XCB_LIBRARIES} ${Vulkan_LIBRARY} ${Vulkan_LIBRARY} ${WAYLAND_CLIENT_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+ENDIF(WIN32)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/")
+
+add_subdirectory(base)
+add_subdirectory(src)
