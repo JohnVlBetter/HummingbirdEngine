@@ -9,17 +9,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/")
 
 #3rd
-include_directories(external)
-include_directories(external/glm)
-include_directories(external/gli)
-include_directories(external/imgui)
-include_directories(external/tinygltf)
+include_directories(3rd)
+include_directories(3rd/glm)
+include_directories(3rd/gli)
+include_directories(3rd/imgui)
+include_directories(3rd/tinygltf)
 
-#base
-include_directories(base)
+#core
+include_directories(src/core)
 
 #vulkan
-find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS ${CMAKE_SOURCE_DIR}/external/vulkan/lib)
+find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS ${CMAKE_SOURCE_DIR}/3rd/vulkan/lib)
 IF (Vulkan_LIBRARY)
 	set(Vulkan_FOUND ON)
 	MESSAGE("Using bundled Vulkan library version")
@@ -32,18 +32,15 @@ ELSE()
 	message(STATUS ${Vulkan_LIBRARY})
 ENDIF()
 
-#预处理器定义
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNOMINMAX -D_USE_MATH_DEFINES")
 
-# MSVC异常处理
 IF(MSVC)
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 ENDIF(MSVC)
 
-#去除编译器警告
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
 file(GLOB SOURCE *.cpp)
 
-add_subdirectory(base)
-add_subdirectory(src)
+add_subdirectory(src/core)
+add_subdirectory(src/example)

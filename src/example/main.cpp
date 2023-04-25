@@ -386,12 +386,12 @@ public:
 		tinygltf::asset_manager = androidApp->activity->assetManager;
 		readDirectory(assetpath + "models", "*.gltf", scenes, true);
 #else
-		const std::string assetpath = "../../data/";
+		const std::string assetpath = "../../../data/";
 		struct stat info;
 		if (stat(assetpath.c_str(), &info) != 0) {
 			std::string msg = "Could not locate asset path in \"" + assetpath + "\".\nMake sure binary is run from correct relative directory!";
 			std::cerr << msg << std::endl;
-			exit(-1);
+			//exit(-1);
 		}
 #endif
 		readDirectory(assetpath + "environments", "*.ktx", environments, false);

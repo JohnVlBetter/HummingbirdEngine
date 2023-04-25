@@ -1,13 +1,3 @@
-/**
- * Vulkan glTF model and texture loading class based on tinyglTF (https://github.com/syoyo/tinygltf)
- *
- * Copyright (C) 2018-2022 by Sascha Willems - www.saschawillems.de
- *
- * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
- */
-
-//#pragma once
-
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_MSC_SECURE_CRT
@@ -17,7 +7,7 @@
 namespace vkglTF
 {
 	// Bounding box
-
+	
 	BoundingBox::BoundingBox() {
 	};
 

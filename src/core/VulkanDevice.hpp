@@ -1,13 +1,3 @@
-/*
-* Vulkan device class
-*
-* Encapsulates a physical Vulkan device and it's logical representation
-*
-* Copyright (C) 2016-2018 by Sascha Willems - www.saschawillems.de
-*
-* This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
-*/
-
 #pragma once
 
 #include <exception>
@@ -16,14 +6,6 @@
 #include <cstring>
 #include <vector>
 #include "vulkan/vulkan.h"
-
-#if defined(VK_USE_PLATFORM_MACOS_MVK) && (VK_HEADER_VERSION >= 216)
-#include <vulkan/vulkan_beta.h>
-#endif
-
-#if defined(VK_USE_PLATFORM_ANDROID_KHR)
-#include "VulkanAndroid.h"
-#endif
 
 #include "macros.h"
 
@@ -208,10 +190,6 @@ namespace vks
 			// Create the logical device representation
 			std::vector<const char*> deviceExtensions(enabledExtensions);
 			deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-
-#if defined(VK_USE_PLATFORM_MACOS_MVK) && (VK_HEADER_VERSION >= 216)
-            deviceExtensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
-#endif
 
 			VkDeviceCreateInfo deviceCreateInfo = {};
 			deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

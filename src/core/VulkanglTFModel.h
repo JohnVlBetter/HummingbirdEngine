@@ -1,11 +1,3 @@
-/**
- * Vulkan glTF model and texture loading class based on tinyglTF (https://github.com/syoyo/tinygltf)
- *
- * Copyright (C) 2018-2022 by Sascha Willems - www.saschawillems.de
- *
- * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
- */
-
 #pragma once
 
 #include <iostream>
@@ -25,18 +17,7 @@
 #include <gli/gli.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-// ERROR is already defined in wingdi.h and collides with a define in the Draco headers
-#if defined(_WIN32) && defined(ERROR) && defined(TINYGLTF_ENABLE_DRACO) 
-#undef ERROR
-#pragma message ("ERROR constant already defined, undefining")
-#endif
-
 #define TINYGLTF_NO_STB_IMAGE_WRITE
-
-#if defined(__ANDROID__)
-#define TINYGLTF_ANDROID_LOAD_FROM_ASSETS
-#include <android/asset_manager.h>
-#endif
 
 #include "tiny_gltf.h"
 
