@@ -20,16 +20,16 @@
 
 #include "vulkan/vulkan.h"
 
-#include "macros.h"
-#include "camera.hpp"
-#include "keycodes.hpp"
+#include "Macros.h"
+#include "Camera.hpp"
+#include "Keycodes.hpp"
 
 #include "VulkanDevice.hpp"
 #include "VulkanSwapChain.hpp"
 
 #include "imgui/imgui.h"
 
-class VulkanExampleBase
+class ApplicationBase
 {
 private:	
 	float fpsTimer = 0.0f;
@@ -71,7 +71,7 @@ protected:
 	VkPipelineCache pipelineCache;
 	VulkanSwapChain swapChain;
 	std::string title = "Vulkan Example";
-	std::string name = "vulkanExample";
+	std::string name = "ApplicationExample";
 	void windowResize();
 public: 
 	static std::vector<const char*> args;
@@ -115,8 +115,8 @@ public:
 	HWND setupWindow(HINSTANCE hinstance, WNDPROC wndproc);
 	void handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-	VulkanExampleBase();
-	virtual ~VulkanExampleBase();
+	ApplicationBase();
+	virtual ~ApplicationBase();
 	
 	void initVulkan();
 

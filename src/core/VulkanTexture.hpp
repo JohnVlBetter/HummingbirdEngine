@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "vulkan/vulkan.h"
-#include "macros.h"
+#include "Macros.h"
 #include "VulkanDevice.hpp"
 
 #include <gli/gli.hpp>

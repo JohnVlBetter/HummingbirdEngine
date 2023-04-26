@@ -8,6 +8,7 @@
 #include <map>
 #include "vulkan/vulkan.h"
 #include "VulkanDevice.hpp"
+#include "FileUtils.hpp"
 
 /*
 	Vulkan buffer object
@@ -60,7 +61,7 @@ VkPipelineShaderStageCreateInfo loadShader(VkDevice device, std::string filename
 	shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	shaderStage.stage = stage;
 	shaderStage.pName = "main";
-	std::ifstream is("../../../data/shaders/" + filename, std::ios::binary | std::ios::in | std::ios::ate);
+	std::ifstream is(GetShaderPath() + filename, std::ios::binary | std::ios::in | std::ios::ate);
 
 	if (is.is_open()) {
 		size_t size = is.tellg();
@@ -83,36 +84,4 @@ VkPipelineShaderStageCreateInfo loadShader(VkDevice device, std::string filename
 
 	assert(shaderStage.module != VK_NULL_HANDLE);
 	return shaderStage;
-}
-
-void readDirectory(const std::string& directory, const std::string &pattern, std::map<std::string, std::string> &filelist, bool recursive)
-{
-	std::string searchpattern(directory + "/" + pattern);
-	WIN32_FIND_DATA data;
-	HANDLE hFind;
-	if ((hFind = FindFirstFile(searchpattern.c_str(), &data)) != INVALID_HANDLE_VALUE) {
-		do {
-			std::string filename(data.cFileName);
-			filename.erase(filename.find_last_of("."), std::string::npos);
-			filelist[filename] = directory + "/" + data.cFileName;
-		} while (FindNextFile(hFind, &data) != 0);
-		FindClose(hFind);
-	}
-	if (recursive) {
-		std::string dirpattern = directory + "/*";
-		if ((hFind = FindFirstFile(dirpattern.c_str(), &data)) != INVALID_HANDLE_VALUE) {
-			do {
-				if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-					char subdir[MAX_PATH];
-					strcpy(subdir, directory.c_str());
-					strcat(subdir, "/");
-					strcat(subdir, data.cFileName);
-					if ((strcmp(data.cFileName, ".") != 0) && (strcmp(data.cFileName, "..") != 0)) {
-						readDirectory(subdir, pattern, filelist, recursive);
-					}
-				}
-			} while (FindNextFile(hFind, &data) != 0);
-			FindClose(hFind);
-		}
-	}
 }

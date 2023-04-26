@@ -5,6 +5,7 @@
 #include "vulkan/vulkan.h"
 #include "imgui/imgui.h"
 #include "VulkanDevice.hpp"
+#include "FileUtils.hpp"
 #include "VulkanUtils.hpp"
 #include "VulkanTexture.hpp"
 
@@ -43,7 +44,8 @@ public:
 		unsigned char* fontData;
 		int texWidth, texHeight;
 
-		io.Fonts->AddFontFromFileTTF("../../../data/Roboto-Medium.ttf", 16.0f);
+		const std::string assetpath = GetFontPath() + "Roboto-Medium.ttf";
+		io.Fonts->AddFontFromFileTTF(assetpath.c_str(), 16.0f);
 
 		io.Fonts->GetTexDataAsRGBA32(&fontData, &texWidth, &texHeight);
 		fontTexture.loadFromBuffer(fontData, texWidth * texHeight * 4 * sizeof(char), VK_FORMAT_R8G8B8A8_UNORM, texWidth, texHeight, vulkanDevice, queue);

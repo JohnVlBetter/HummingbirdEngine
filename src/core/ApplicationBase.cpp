@@ -1,6 +1,6 @@
-#include "VulkanExampleBase.h"
+#include "ApplicationBase.h"
 
-std::vector<const char*> VulkanExampleBase::args;
+std::vector<const char*> ApplicationBase::args;
 
 VKAPI_ATTR VkBool32 VKAPI_CALL debugMessageCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t srcObject, size_t location, int32_t msgCode, const char * pLayerPrefix, const char * pMsg, void * pUserData)
 {
@@ -21,7 +21,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugMessageCallback(VkDebugReportFlagsEXT flags,
 	return VK_FALSE;
 }
 
-VkResult VulkanExampleBase::createInstance(bool enableValidation)
+VkResult ApplicationBase::createInstance(bool enableValidation)
 {
 	this->settings.validation = enableValidation;
 
@@ -56,7 +56,7 @@ VkResult VulkanExampleBase::createInstance(bool enableValidation)
 	}
 	return vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
 }
-void VulkanExampleBase::prepare()
+void ApplicationBase::prepare()
 {
 	/*
 		Swapchain
@@ -253,9 +253,9 @@ void VulkanExampleBase::prepare()
 	setupFrameBuffer();
 }
 
-void VulkanExampleBase::fileDropped(std::string filename) { }
+void ApplicationBase::fileDropped(std::string filename) { }
 
-void VulkanExampleBase::renderFrame()
+void ApplicationBase::renderFrame()
 {
 	auto tStart = std::chrono::high_resolution_clock::now();
 
@@ -273,7 +273,7 @@ void VulkanExampleBase::renderFrame()
 	}
 }
 
-void VulkanExampleBase::renderLoop()
+void ApplicationBase::renderLoop()
 {
 	destWidth = width;
 	destHeight = height;
@@ -296,7 +296,7 @@ void VulkanExampleBase::renderLoop()
 	vkDeviceWaitIdle(device);
 }
 
-VulkanExampleBase::VulkanExampleBase()
+ApplicationBase::ApplicationBase()
 {
 	char* numConvPtr;
 	// Parse command line arguments
@@ -329,7 +329,7 @@ VulkanExampleBase::VulkanExampleBase()
 	SetConsoleTitle(TEXT("Vulkan validation output"));
 }
 
-VulkanExampleBase::~VulkanExampleBase()
+ApplicationBase::~ApplicationBase()
 {
 	// Clean up Vulkan resources
 	swapChain.cleanup();
@@ -358,7 +358,7 @@ VulkanExampleBase::~VulkanExampleBase()
 	vkDestroyInstance(instance, nullptr);
 }
 
-void VulkanExampleBase::initVulkan()
+void ApplicationBase::initVulkan()
 {
 	VkResult err;
 
@@ -459,7 +459,7 @@ void VulkanExampleBase::initVulkan()
 	swapChain.connect(instance, physicalDevice, device);
 }
 
-HWND VulkanExampleBase::setupWindow(HINSTANCE hinstance, WNDPROC wndproc)
+HWND ApplicationBase::setupWindow(HINSTANCE hinstance, WNDPROC wndproc)
 {
 	this->windowInstance = hinstance;
 
@@ -558,7 +558,7 @@ HWND VulkanExampleBase::setupWindow(HINSTANCE hinstance, WNDPROC wndproc)
 	return window;
 }
 
-void VulkanExampleBase::handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+void ApplicationBase::handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
@@ -688,9 +688,9 @@ void VulkanExampleBase::handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 	}
 }
 
-void VulkanExampleBase::windowResized() {}
+void ApplicationBase::windowResized() {}
 
-void VulkanExampleBase::setupFrameBuffer()
+void ApplicationBase::setupFrameBuffer()
 {
 	/*
 	MSAA
@@ -864,7 +864,7 @@ void VulkanExampleBase::setupFrameBuffer()
 	}
 }
 
-void VulkanExampleBase::windowResize()
+void ApplicationBase::windowResize()
 {
 	if (!prepared) {
 		return;
@@ -898,7 +898,7 @@ void VulkanExampleBase::windowResize()
 	prepared = true;
 }
 
-void VulkanExampleBase::handleMouseMove(int32_t x, int32_t y)
+void ApplicationBase::handleMouseMove(int32_t x, int32_t y)
 {
 	int32_t dx = (int32_t)mousePos.x - x;
 	int32_t dy = (int32_t)mousePos.y - y;
@@ -928,12 +928,12 @@ void VulkanExampleBase::handleMouseMove(int32_t x, int32_t y)
 	mousePos = glm::vec2((float)x, (float)y);
 }
 
-void VulkanExampleBase::initSwapchain()
+void ApplicationBase::initSwapchain()
 {
 	swapChain.initSurface(windowInstance, window);
 }
 
-void VulkanExampleBase::setupSwapChain()
+void ApplicationBase::setupSwapChain()
 {
 	swapChain.create(&width, &height, settings.vsync);
 }

@@ -7,7 +7,7 @@
 #include <vector>
 #include "vulkan/vulkan.h"
 
-#include "macros.h"
+#include "Macros.h"
 
 namespace vks
 {	

@@ -8,21 +8,20 @@
 #include "algorithm"
 
 #include <vulkan/vulkan.h>
-#include "VulkanExampleBase.h"
+#include "ApplicationBase.h"
 #include "VulkanTexture.hpp"
 #include "VulkanglTFModel.h"
 #include "VulkanUtils.hpp"
-#include "ui.hpp"
+
+#include "UI.hpp"
+#include "FileUtils.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-/*
-	PBR example main class
-*/
-class VulkanExample : public VulkanExampleBase
+class ApplicationExample : public ApplicationBase
 {
 public:
 	struct Textures {
@@ -106,12 +105,6 @@ public:
 
 	UI *ui;
 
-#if defined(VK_USE_PLATFORM_ANDROID_KHR)
-	const std::string assetpath = "";
-#else
-	const std::string assetpath = "./../data/";
-#endif
-
 	bool rotateModel = false;
 	glm::vec3 modelrot = glm::vec3(0.0f);
 	glm::vec3 modelPos = glm::vec3(0.0f);
@@ -146,15 +139,12 @@ public:
 	int32_t debugViewInputs = 0;
 	int32_t debugViewEquation = 0;
 
-	VulkanExample() : VulkanExampleBase()
+	ApplicationExample() : ApplicationBase()
 	{
-		title = "Vulkan glTF 2.0 PBR - (C) Sascha Willems (www.saschawillems.de)";
-#if defined(TINYGLTF_ENABLE_DRACO)
-		std::cout << "Draco mesh compression is enabled" << std::endl;
-#endif
+		title = "Hummingbird Engine";
 	}
 
-	~VulkanExample()
+	~ApplicationExample()
 	{
 		vkDestroyPipeline(device, pipelines.skybox, nullptr);
 		vkDestroyPipeline(device, pipelines.pbr, nullptr);
@@ -382,24 +372,19 @@ public:
 
 	void loadAssets()
 	{
-#if defined(VK_USE_PLATFORM_ANDROID_KHR)
-		tinygltf::asset_manager = androidApp->activity->assetManager;
-		readDirectory(assetpath + "models", "*.gltf", scenes, true);
-#else
-		const std::string assetpath = "../../../data/";
+		const std::string assetpath = GetAssetPath();
 		struct stat info;
 		if (stat(assetpath.c_str(), &info) != 0) {
 			std::string msg = "Could not locate asset path in \"" + assetpath + "\".\nMake sure binary is run from correct relative directory!";
 			std::cerr << msg << std::endl;
-			//exit(-1);
+			exit(-1);
 		}
-#endif
-		readDirectory(assetpath + "environments", "*.ktx", environments, false);
+		ReadDirectory(GetEnvironmentPath(), "*.ktx", environments, false);
 
-		textures.empty.loadFromFile(assetpath + "textures/empty.ktx", VK_FORMAT_R8G8B8A8_UNORM, vulkanDevice, queue);
+		textures.empty.loadFromFile(GetTexturePath() + "empty.ktx", VK_FORMAT_R8G8B8A8_UNORM, vulkanDevice, queue);
 
-		std::string sceneFile = assetpath + "models/DamagedHelmet/glTF/DamagedHelmet.gltf";
-		std::string envMapFile = assetpath + "environments/papermill.ktx";
+		std::string sceneFile = GetModelPath() + "DamagedHelmet/glTF/DamagedHelmet.gltf";
+		std::string envMapFile = GetEnvironmentPath() + "papermill.ktx";
 		for (size_t i = 0; i < args.size(); i++) {
 			if ((std::string(args[i]).find(".gltf") != std::string::npos) || (std::string(args[i]).find(".glb") != std::string::npos)) {
 				std::ifstream file(args[i]);
@@ -421,7 +406,7 @@ public:
 		}
 
 		loadScene(sceneFile.c_str());
-		models.skybox.loadFromFile(assetpath + "models/Box/glTF-Embedded/Box.gltf", vulkanDevice, queue);
+		models.skybox.loadFromFile(GetModelPath() + "Box/glTF-Embedded/Box.gltf", vulkanDevice, queue);
 
 		loadEnvironment(envMapFile.c_str());
 	}
@@ -1700,7 +1685,7 @@ public:
 
 	void prepare()
 	{
-		VulkanExampleBase::prepare();
+		ApplicationBase::prepare();
 
 		camera.type = Camera::CameraType::lookat;
 
@@ -2036,101 +2021,24 @@ public:
 
 };
 
-VulkanExample *vulkanExample;
+ApplicationExample *applicationExample;
 
-// OS specific macros for the example main entry points
-#if defined(_WIN32)
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if (vulkanExample != NULL)
+	if (applicationExample != NULL)
 	{
-		vulkanExample->handleMessages(hWnd, uMsg, wParam, lParam);
+		applicationExample->handleMessages(hWnd, uMsg, wParam, lParam);
 	}
 	return (DefWindowProc(hWnd, uMsg, wParam, lParam));
 }
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
 {
-	for (int32_t i = 0; i < __argc; i++) { VulkanExample::args.push_back(__argv[i]); };
-	vulkanExample = new VulkanExample();
-	vulkanExample->initVulkan();
-	vulkanExample->setupWindow(hInstance, WndProc);
-	vulkanExample->prepare();
-	vulkanExample->renderLoop();
-	delete(vulkanExample);
+	for (int32_t i = 0; i < __argc; i++) { ApplicationExample::args.push_back(__argv[i]); };
+	applicationExample = new ApplicationExample();
+	applicationExample->initVulkan();
+	applicationExample->setupWindow(hInstance, WndProc);
+	applicationExample->prepare();
+	applicationExample->renderLoop();
+	delete(applicationExample);
 	return 0;
 }
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-// Android entry point
-void android_main(android_app* state)
-{
-	vulkanExample = new VulkanExample();
-	state->userData = vulkanExample;
-	state->onAppCmd = VulkanExample::handleAppCommand;
-	state->onInputEvent = VulkanExample::handleAppInput;
-	androidApp = state;
-	vks::android::getDeviceConfig();
-	vulkanExample->renderLoop();
-	delete(vulkanExample);
-}
-#elif defined(_DIRECT2DISPLAY)
-// Linux entry point with direct to display wsi
-static void handleEvent()
-{
-}
-int main(const int argc, const char *argv[])
-{
-	for (size_t i = 0; i < argc; i++) { VulkanExample::args.push_back(argv[i]); };
-	vulkanExample = new VulkanExample();
-	vulkanExample->initVulkan();
-	vulkanExample->prepare();
-	vulkanExample->renderLoop();
-	delete(vulkanExample);
-	return 0;
-}
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-int main(const int argc, const char *argv[])
-{
-	for (size_t i = 0; i < argc; i++) { VulkanExample::args.push_back(argv[i]); };
-	vulkanExample = new VulkanExample();
-	vulkanExample->initVulkan();
-	vulkanExample->setupWindow();
-	vulkanExample->prepare();
-	vulkanExample->renderLoop();
-	delete(vulkanExample);
-	return 0;
-}
-#elif defined(VK_USE_PLATFORM_XCB_KHR)
-static void handleEvent(const xcb_generic_event_t *event)
-{
-	if (vulkanExample != NULL)
-	{
-		vulkanExample->handleEvent(event);
-	}
-}
-int main(const int argc, const char *argv[])
-{
-	for (size_t i = 0; i < argc; i++) { VulkanExample::args.push_back(argv[i]); };
-	vulkanExample = new VulkanExample();
-	vulkanExample->initVulkan();
-	vulkanExample->setupWindow();
-	vulkanExample->prepare();
-	vulkanExample->renderLoop();
-	delete(vulkanExample);
-	return 0;
-}
-#elif defined(VK_USE_PLATFORM_MACOS_MVK)
-int main(const int argc, const char *argv[])
-{
-	@autoreleasepool
-	{
-		for (size_t i = 0; i < argc; i++) { VulkanExample::args.push_back(argv[i]); };
-		vulkanExample = new VulkanExample();
-		vulkanExample->initVulkan();
-		vulkanExample->setupWindow();
-		vulkanExample->prepare();
-		vulkanExample->renderLoop();
-		delete(vulkanExample);
-	}
-	return 0;
-}
-#endif
