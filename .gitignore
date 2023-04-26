@@ -211,11 +211,10 @@ android/layers/*/*.so
 
 # Downloadable assets
 vulkan_asset_pack.*
-artRes/textures/
-artRes/environments/
-artRes/readme.txt
+#artRes/textures/
+#artRes/environments/
 artRes/models/
-!artRes/textures/hdr/README.md
+#!artRes/textures/hdr/README.md
 
 *.args.json
 
