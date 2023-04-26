@@ -199,9 +199,9 @@ FakesAssemblies/
 .vs/
 
 # Don't ignore 3d models in obj format
-!data/models/*.obj
-!data/models/lowpoly/*.obj
-!data/models/voyager/*.obj
+!artRes/models/*.obj
+!artRes/models/lowpoly/*.obj
+!artRes/models/voyager/*.obj
 
 # DLLs in bin
 !bin/*.dll
@@ -211,11 +211,11 @@ android/layers/*/*.so
 
 # Downloadable assets
 vulkan_asset_pack.*
-data/textures/
-data/environments/
-data/readme.txt
-data/models/
-!data/textures/hdr/README.md
+artRes/textures/
+artRes/environments/
+artRes/readme.txt
+artRes/models/
+!artRes/textures/hdr/README.md
 
 *.args.json
 
@@ -226,17 +226,3 @@ data/models/
 *.vcxproj.user
 
 libbase.a
-
-android/assets/
-android/bin/
-android/libs/
-android/obj/
-android/build.xml
-android/local.properties
-android/project.properties
-android/proguard-project.txt
-android/**/.apk
-
-libs/draco/*.lib
-external/draco/*
-!external/draco/README.md

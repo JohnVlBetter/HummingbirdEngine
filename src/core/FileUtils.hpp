@@ -40,7 +40,7 @@ void ReadDirectory(const std::string& directory, const std::string& pattern, std
 	}
 }
 
-const std::string assetpath = "../../../data/";
+const std::string assetpath = "../../../artRes/";
 
 const std::string GetAssetPath(){
 	return assetpath;
