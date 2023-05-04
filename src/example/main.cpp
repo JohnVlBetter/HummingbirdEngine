@@ -131,11 +131,6 @@ public:
 	std::map<std::string, std::string> environments;
 	std::string selectedEnvironment = "papermill";
 
-#if !defined(_WIN32)
-	std::map<std::string, std::string> scenes;
-	std::string selectedScene = "DamagedHelmet";
-#endif
-
 	int32_t debugViewInputs = 0;
 	int32_t debugViewEquation = 0;
 
@@ -1762,31 +1757,18 @@ public:
 		bool updateCBs = false;
 		float scale = 1.0f;
 
-#if defined(VK_USE_PLATFORM_ANDROID_KHR)
-		scale = (float)vks::android::screenDensity / (float)ACONFIGURATION_DENSITY_MEDIUM;
-#endif
 		ImGui::NewFrame();
 
 		ImGui::SetNextWindowPos(ImVec2(10, 10));
-		ImGui::SetNextWindowSize(ImVec2(200 * scale, (models.scene.animations.size() > 0 ? 440 : 360) * scale), ImGuiSetCond_Always);
-		ImGui::Begin("Vulkan glTF 2.0 PBR", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+		ImGui::SetNextWindowSize(ImVec2(200 * scale, (models.scene.animations.size() > 0 ? 420 : 340) * scale), ImGuiSetCond_Always);
+		ImGui::Begin("Hummingbird Engine", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 		ImGui::PushItemWidth(100.0f * scale);
 
-		ui->text("www.saschawillems.de");
 		ui->text("%.1d fps (%.2f ms)", lastFPS, (1000.0f / lastFPS));
 
 		if (ui->header("Scene")) {
-#if defined(VK_USE_PLATFORM_ANDROID_KHR)
-			if (ui->combo("File", selectedScene, scenes)) {
-				vkDeviceWaitIdle(device);
-				loadScene(scenes[selectedScene]);
-				setupDescriptors();
-				updateCBs = true;
-			}
-#else
 			if (ui->button("Open gltf file")) {
 				std::string filename = "";
-#if defined(_WIN32)
 				char buffer[MAX_PATH];
 				OPENFILENAME ofn;
 				ZeroMemory(&buffer, sizeof(buffer));
@@ -1800,17 +1782,6 @@ public:
 				if (GetOpenFileNameA(&ofn)) {
 					filename = buffer;
 				}
-#elif defined(__linux__) && !defined(VK_USE_PLATFORM_ANDROID_KHR)
-				char buffer[1024];
-				FILE *file = popen("zenity --title=\"Select a glTF file to load\" --file-filter=\"glTF files | *.gltf *.glb\" --file-selection", "r");
-				if (file) {
-					while (fgets(buffer, sizeof(buffer), file)) {
-						filename += buffer;
-					};
-					filename.erase(std::remove(filename.begin(), filename.end(), '\n'), filename.end());
-					std::cout << filename << std::endl;
-				}
-#endif
 				if (!filename.empty()) {
 					vkDeviceWaitIdle(device);
 					loadScene(filename);
@@ -1818,7 +1789,6 @@ public:
 					updateCBs = true;
 				}
 			}
-#endif
 			if (ui->combo("Environment", selectedEnvironment, environments)) {
 				vkDeviceWaitIdle(device);
 				loadEnvironment(environments[selectedEnvironment]);
@@ -1927,12 +1897,6 @@ public:
 		if (updateShaderParams) {
 			updateParams();
 		}
-
-#if defined(VK_USE_PLATFORM_ANDROID_KHR)
-		if (mouseButtons.left) {
-			mouseButtons.left = false;
-		}
-#endif
 	}
 
 	virtual void render()
