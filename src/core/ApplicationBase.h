@@ -18,7 +18,8 @@
 #include <array>
 #include <numeric>
 
-#include "vulkan/vulkan.h"
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 #include "Macros.h"
 #include "Camera.hpp"
@@ -114,6 +115,10 @@ public:
 
 	HWND setupWindow(HINSTANCE hinstance, WNDPROC wndproc);
 	void handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+	GLFWwindow* glfwWindow;
+	bool framebufferResized = false;
+	void initWindow();
 
 	ApplicationBase();
 	virtual ~ApplicationBase();

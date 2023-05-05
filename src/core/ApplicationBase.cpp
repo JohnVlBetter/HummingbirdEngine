@@ -296,6 +296,22 @@ void ApplicationBase::renderLoop()
 	vkDeviceWaitIdle(device);
 }
 
+static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
+	app->framebufferResized = true;
+}
+
+void ApplicationBase::initWindow()
+{
+	glfwInit();
+
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+	glfwWindow = glfwCreateWindow(width, height, "Hummingbird Engine", nullptr, nullptr);
+	glfwSetWindowUserPointer(glfwWindow, this);
+	glfwSetFramebufferSizeCallback(glfwWindow, framebufferResizeCallback);
+}
+
 ApplicationBase::ApplicationBase()
 {
 	char* numConvPtr;
@@ -458,6 +474,8 @@ void ApplicationBase::initVulkan()
 
 	swapChain.connect(instance, physicalDevice, device);
 }
+
+
 
 HWND ApplicationBase::setupWindow(HINSTANCE hinstance, WNDPROC wndproc)
 {

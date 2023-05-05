@@ -7,8 +7,7 @@
 #include <map>
 #include "algorithm"
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include "vulkan/vulkan.h"
 
 #include "ApplicationBase.h"
 #include "VulkanTexture.hpp"
@@ -1997,12 +1996,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 	return (DefWindowProc(hWnd, uMsg, wParam, lParam));
 }
+
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
 {
 	for (int32_t i = 0; i < __argc; i++) { ApplicationExample::args.push_back(__argv[i]); };
 	applicationExample = new ApplicationExample();
 	applicationExample->initVulkan();
 	applicationExample->setupWindow(hInstance, WndProc);
+	applicationExample->initWindow();
 	applicationExample->prepare();
 	applicationExample->renderLoop();
 	delete(applicationExample);
