@@ -15,6 +15,11 @@ include_directories(3rd/gli)
 include_directories(3rd/imgui)
 include_directories(3rd/tinygltf)
 
+#glfw
+include_directories(3rd/glfw/include)
+set(GLFW_DLL_DIR ${CMAKE_SOURCE_DIR}/3rd/glfw/lib-vc2022/glfw3.lib)
+message("${GLFW_DLL_DIR}")
+
 #core
 include_directories(src/core)
 
