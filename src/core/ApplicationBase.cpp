@@ -31,17 +31,22 @@ VkResult ApplicationBase::createInstance(bool enableValidation)
 	appInfo.pEngineName = name.c_str();
 	appInfo.apiVersion = VK_API_VERSION_1_0;
 
-	std::vector<const char*> instanceExtensions = { VK_KHR_SURFACE_EXTENSION_NAME };
+	//std::vector<const char*> instanceExtensions = { VK_KHR_SURFACE_EXTENSION_NAME };
+	uint32_t glfwExtensionCount = 0;
+	const char** glfwExtensions;
+	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-	instanceExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+	std::vector<const char*> instanceExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
 	VkInstanceCreateInfo instanceCreateInfo = {};
 	instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	instanceCreateInfo.pNext = NULL;
 	instanceCreateInfo.pApplicationInfo = &appInfo;
 
+	
 	if (instanceExtensions.size() > 0)
 	{
+
 		if (settings.validation) {
 			instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 		}
@@ -296,6 +301,15 @@ void ApplicationBase::renderLoop()
 	vkDeviceWaitIdle(device);
 }
 
+void ApplicationBase::mainLoop() {
+	while (!glfwWindowShouldClose(glfwWindow)) {
+		glfwPollEvents();
+		renderFrame();
+	}
+
+	vkDeviceWaitIdle(device);
+}
+
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
 	app->framebufferResized = true;
@@ -307,14 +321,14 @@ void ApplicationBase::initWindow()
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-	glfwWindow = glfwCreateWindow(width, height, "Hummingbird Engine", nullptr, nullptr);
+	glfwWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
 	glfwSetWindowUserPointer(glfwWindow, this);
 	glfwSetFramebufferSizeCallback(glfwWindow, framebufferResizeCallback);
 }
 
 ApplicationBase::ApplicationBase()
 {
-	char* numConvPtr;
+	/*char* numConvPtr;
 	// Parse command line arguments
 	for (size_t i = 0; i < args.size(); i++)
 	{
@@ -342,7 +356,7 @@ ApplicationBase::ApplicationBase()
 	FILE *stream;
 	freopen_s(&stream, "CONOUT$", "w+", stdout);
 	freopen_s(&stream, "CONOUT$", "w+", stderr);
-	SetConsoleTitle(TEXT("Vulkan validation output"));
+	SetConsoleTitle(TEXT("Vulkan validation output"));*/
 }
 
 ApplicationBase::~ApplicationBase()
@@ -372,6 +386,9 @@ ApplicationBase::~ApplicationBase()
 		vkDestroyDebugReportCallback(instance, debugReportCallback, nullptr);
 	}
 	vkDestroyInstance(instance, nullptr);
+
+	glfwDestroyWindow(glfwWindow);
+	glfwTerminate();
 }
 
 void ApplicationBase::initVulkan()
@@ -889,9 +906,17 @@ void ApplicationBase::windowResize()
 	}
 	prepared = false;
 
-	vkDeviceWaitIdle(device);
 	width = destWidth;
 	height = destHeight;
+
+	int glfwWidth = 0, glfwHeight = 0;
+	glfwGetFramebufferSize(glfwWindow, &glfwWidth, &glfwHeight);
+	while (glfwWidth == 0 || glfwHeight == 0) {
+		glfwGetFramebufferSize(glfwWindow, &glfwWidth, &glfwHeight);
+		glfwWaitEvents();
+	}
+
+	vkDeviceWaitIdle(device);
 	setupSwapChain();
 	if (settings.multiSampling) {
 		vkDestroyImageView(device, multisampleTarget.color.view, nullptr);
@@ -948,7 +973,7 @@ void ApplicationBase::handleMouseMove(int32_t x, int32_t y)
 
 void ApplicationBase::initSwapchain()
 {
-	swapChain.initSurface(windowInstance, window);
+	swapChain.initSurface(glfwWindow);
 }
 
 void ApplicationBase::setupSwapChain()

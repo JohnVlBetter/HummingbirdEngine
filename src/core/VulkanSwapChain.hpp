@@ -17,10 +17,10 @@ typedef struct _SwapChainBuffers {
 class VulkanSwapChain
 {
 private: 
+	VkSurfaceKHR surface = VK_NULL_HANDLE;
 	VkInstance instance;
 	VkDevice device;
 	VkPhysicalDevice physicalDevice;
-	VkSurfaceKHR surface = VK_NULL_HANDLE;
 	// Function pointers
 	PFN_vkGetPhysicalDeviceSurfaceSupportKHR fpGetPhysicalDeviceSurfaceSupportKHR;
 	PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fpGetPhysicalDeviceSurfaceCapabilitiesKHR; 
@@ -41,19 +41,10 @@ public:
 	VkExtent2D extent = {};
 	uint32_t queueNodeIndex = UINT32_MAX;
 
-	void initSurface(void* platformHandle, void* platformWindow)
+	void initSurface(GLFWwindow* glfwWindow)
 	{
-		VkResult err = VK_SUCCESS;
-
-		VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
-		surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-		surfaceCreateInfo.hinstance = (HINSTANCE)platformHandle;
-		surfaceCreateInfo.hwnd = (HWND)platformWindow;
-		err = vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
-
-		if (err != VK_SUCCESS) {
-			std::cerr << "Could not create surface!" << std::endl;
-			exit(err);
+		if (glfwCreateWindowSurface(instance, glfwWindow, nullptr, &surface) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create glfw window surface!");
 		}
 
 		// Get available queue family properties

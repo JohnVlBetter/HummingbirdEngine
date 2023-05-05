@@ -136,5 +136,6 @@ public:
 	void setupSwapChain();
 
 	void renderLoop();
+	void mainLoop();
 	void renderFrame();
 };

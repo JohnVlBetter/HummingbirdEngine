@@ -21,6 +21,7 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#define M_PI 3.14159265358979323846 
 
 class ApplicationExample : public ApplicationBase
 {
@@ -1988,6 +1989,25 @@ public:
 
 ApplicationExample *applicationExample;
 
+int main() {
+	try {
+		applicationExample = new ApplicationExample();
+		applicationExample->initVulkan();
+		//applicationExample->setupWindow(hInstance, WndProc);
+		applicationExample->initWindow();
+		applicationExample->prepare();
+		//applicationExample->renderLoop();
+		applicationExample->mainLoop();
+		delete(applicationExample);
+	}
+	catch (const std::exception& e) {
+		std::cerr << e.what() << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
+}
+/*
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	if (applicationExample != NULL)
@@ -2002,10 +2022,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
 	for (int32_t i = 0; i < __argc; i++) { ApplicationExample::args.push_back(__argv[i]); };
 	applicationExample = new ApplicationExample();
 	applicationExample->initVulkan();
-	applicationExample->setupWindow(hInstance, WndProc);
+	//applicationExample->setupWindow(hInstance, WndProc);
 	applicationExample->initWindow();
 	applicationExample->prepare();
-	applicationExample->renderLoop();
+	//applicationExample->renderLoop();
+	applicationExample->mainLoop();
 	delete(applicationExample);
 	return 0;
-}
+}*/
