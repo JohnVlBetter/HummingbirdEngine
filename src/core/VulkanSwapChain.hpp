@@ -17,7 +17,7 @@ typedef struct _SwapChainBuffers {
 class VulkanSwapChain
 {
 private: 
-	VkSurfaceKHR surface = VK_NULL_HANDLE;
+	VkSurfaceKHR surface;
 	VkInstance instance;
 	VkDevice device;
 	VkPhysicalDevice physicalDevice;

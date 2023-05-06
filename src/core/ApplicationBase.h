@@ -1,6 +1,8 @@
 #pragma once
 
-#pragma comment(linker, "/subsystem:windows")
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
 #include <windows.h>
 #include <fcntl.h>
 #include <io.h>
@@ -17,9 +19,6 @@
 #include <sstream>
 #include <array>
 #include <numeric>
-
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 
 #include "Macros.h"
 #include "Camera.hpp"

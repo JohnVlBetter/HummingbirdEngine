@@ -37,6 +37,7 @@ VkResult ApplicationBase::createInstance(bool enableValidation)
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
 	std::vector<const char*> instanceExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+	instanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 
 	VkInstanceCreateInfo instanceCreateInfo = {};
 	instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;

@@ -1992,9 +1992,9 @@ ApplicationExample *applicationExample;
 int main() {
 	try {
 		applicationExample = new ApplicationExample();
-		applicationExample->initVulkan();
-		//applicationExample->setupWindow(hInstance, WndProc);
 		applicationExample->initWindow();
+		//applicationExample->setupWindow(hInstance, WndProc);
+		applicationExample->initVulkan();
 		applicationExample->prepare();
 		//applicationExample->renderLoop();
 		applicationExample->mainLoop();
