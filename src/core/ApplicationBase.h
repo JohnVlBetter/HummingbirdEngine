@@ -37,7 +37,10 @@ private:
 	uint32_t destWidth;
 	uint32_t destHeight;
 	bool resizing = false;
-	void handleMouseMove(int32_t x, int32_t y);
+	inline bool checkKeyPress(int key);
+	inline bool checkKeyRelease(int key);
+	inline bool checkMouseButtonPress(int key);
+	inline bool checkMouseButtonRelease(int key);
 	PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallback;
 	PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallback;
 	VkDebugReportCallbackEXT debugReportCallback;
@@ -113,6 +116,7 @@ public:
 	HINSTANCE windowInstance;
 
 	HWND setupWindow(HINSTANCE hinstance, WNDPROC wndproc);
+	void handleMouseMove(int32_t x, int32_t y);
 	void handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 	GLFWwindow* glfwWindow;
@@ -136,5 +140,6 @@ public:
 
 	void renderLoop();
 	void mainLoop();
+	void processInput();
 	void renderFrame();
 };

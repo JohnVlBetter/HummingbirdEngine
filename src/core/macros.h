@@ -2,6 +2,8 @@
 
 #include "vulkan/vulkan.h"
 
+#define M_PI 3.14159265358979323846 
+
 #define VK_CHECK_RESULT(f)																				\
 {																										\
 	VkResult res = (f);																					\

@@ -303,9 +303,15 @@ void ApplicationBase::renderLoop()
 }
 
 void ApplicationBase::mainLoop() {
+	destWidth = width;
+	destHeight = height;
+
 	while (!glfwWindowShouldClose(glfwWindow)) {
-		glfwPollEvents();
+		processInput();
 		renderFrame();
+
+		glfwSwapBuffers(glfwWindow);
+		glfwPollEvents();
 	}
 
 	vkDeviceWaitIdle(device);
@@ -316,14 +322,20 @@ static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 	app->framebufferResized = true;
 }
 
+static void cursorPosCallback(GLFWwindow* window, double x, double y) {
+	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
+	app->handleMouseMove((int32_t)x, (int32_t)y);
+}
+
 void ApplicationBase::initWindow()
 {
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
 	glfwWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
+
 	glfwSetWindowUserPointer(glfwWindow, this);
+	glfwSetCursorPosCallback(glfwWindow, cursorPosCallback);
 	glfwSetFramebufferSizeCallback(glfwWindow, framebufferResizeCallback);
 }
 
@@ -493,191 +505,83 @@ void ApplicationBase::initVulkan()
 	swapChain.connect(instance, physicalDevice, device);
 }
 
-
-
-HWND ApplicationBase::setupWindow(HINSTANCE hinstance, WNDPROC wndproc)
-{
-	this->windowInstance = hinstance;
-
-	WNDCLASSEX wndClass;
-
-	wndClass.cbSize = sizeof(WNDCLASSEX);
-	wndClass.style = CS_HREDRAW | CS_VREDRAW;
-	wndClass.lpfnWndProc = wndproc;
-	wndClass.cbClsExtra = 0;
-	wndClass.cbWndExtra = 0;
-	wndClass.hInstance = hinstance;
-	wndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-	wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wndClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-	wndClass.lpszMenuName = NULL;
-	wndClass.lpszClassName = name.c_str();
-	wndClass.hIconSm = LoadIcon(NULL, IDI_WINLOGO);
-
-	if (!RegisterClassEx(&wndClass)) {
-		std::cout << "Could not register window class!\n";
-		fflush(stdout);
-		exit(1);
-	}
-
-	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-
-	if (settings.fullscreen) {
-		DEVMODE dmScreenSettings;
-		memset(&dmScreenSettings, 0, sizeof(dmScreenSettings));
-		dmScreenSettings.dmSize = sizeof(dmScreenSettings);
-		dmScreenSettings.dmPelsWidth = screenWidth;
-		dmScreenSettings.dmPelsHeight = screenHeight;
-		dmScreenSettings.dmBitsPerPel = 32;
-		dmScreenSettings.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-		if ((width != (uint32_t)screenWidth) && (height != (uint32_t)screenHeight)) {
-			if (ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL)	{
-				if (MessageBox(NULL, "Fullscreen Mode not supported!\n Switch to window mode?", "Error", MB_YESNO | MB_ICONEXCLAMATION) == IDYES) {
-					settings.fullscreen = false;
-				} else {
-					return nullptr;
-				}
-			}
+void ApplicationBase::processInput() {
+	if (camera.firstperson)
+	{
+		if (checkKeyPress(GLFW_KEY_W)) {
+			camera.keys.up = true;
+		}
+		else if (checkKeyPress(GLFW_KEY_S)) {
+			camera.keys.down = true;
+		}
+		else if (checkKeyPress(GLFW_KEY_A)) {
+			camera.keys.left = true;
+		}
+		else if (checkKeyPress(GLFW_KEY_D)) {
+			camera.keys.right = true;
 		}
 	}
 
-	DWORD dwExStyle;
-	DWORD dwStyle;
-
-	if (settings.fullscreen) {
-		dwExStyle = WS_EX_APPWINDOW;
-		dwStyle = WS_POPUP | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
-	} else {
-		dwExStyle = WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;
-		dwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
+	if (checkKeyPress(GLFW_KEY_P)) {
+		paused = !paused;
 	}
-
-	RECT windowRect;
-	windowRect.left = 0L;
-	windowRect.top = 0L;
-	windowRect.right = settings.fullscreen ? (long)screenWidth : (long)width;
-	windowRect.bottom = settings.fullscreen ? (long)screenHeight : (long)height;
-
-	AdjustWindowRectEx(&windowRect, dwStyle, FALSE, dwExStyle);
-
-	window = CreateWindowEx(WS_EX_ACCEPTFILES,
-		name.c_str(),
-		title.c_str(),
-		dwStyle | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-		0,
-		0,
-		windowRect.right - windowRect.left,
-		windowRect.bottom - windowRect.top,
-		NULL,
-		NULL,
-		hinstance,
-		NULL);
-
-	if (!settings.fullscreen) {
-		uint32_t x = (GetSystemMetrics(SM_CXSCREEN) - windowRect.right) / 2;
-		uint32_t y = (GetSystemMetrics(SM_CYSCREEN) - windowRect.bottom) / 2;
-		SetWindowPos(window, 0, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+	else if (checkKeyPress(GLFW_KEY_ESCAPE)) {
+		glfwSetWindowShouldClose(glfwWindow, GL_TRUE);
 	}
-
-	if (!window) {
-		printf("Could not create window!\n");
-		fflush(stdout);
-		return nullptr;
-		exit(1);
+	else if (checkKeyPress(GLFW_KEY_ESCAPE)) {
+		glfwSetWindowShouldClose(glfwWindow, GL_TRUE);
 	}
+	else if (checkMouseButtonPress(GLFW_MOUSE_BUTTON_LEFT)) {
+		mouseButtons.left = true;
+		double xPos, yPos;
+		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
+		mousePos = glm::vec2((float)xPos, (float)yPos);
+	}
+	else if (checkMouseButtonPress(GLFW_MOUSE_BUTTON_RIGHT)) {
+		mouseButtons.right = true;
+		double xPos, yPos;
+		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
+		mousePos = glm::vec2((float)xPos, (float)yPos);
+	}
+	else if (checkMouseButtonPress(GLFW_MOUSE_BUTTON_MIDDLE)) {
+		mouseButtons.middle = true;
+		double xPos, yPos;
+		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
+		mousePos = glm::vec2((float)xPos, (float)yPos);
+	}
+	else if (checkMouseButtonRelease(GLFW_MOUSE_BUTTON_LEFT)) {
+		mouseButtons.left = false;
+	}
+	else if (checkMouseButtonRelease(GLFW_MOUSE_BUTTON_RIGHT)) {
+		mouseButtons.right = false;
+	}
+	else if (checkMouseButtonRelease(GLFW_MOUSE_BUTTON_MIDDLE)) {
+		mouseButtons.middle = false;
+	}
+}
 
-	ShowWindow(window, SW_SHOW);
-	SetForegroundWindow(window);
-	SetFocus(window);
+inline bool ApplicationBase::checkKeyPress(int key) {
+	int status = glfwGetKey(glfwWindow, key);
+	return status == GLFW_PRESS || status == GLFW_REPEAT;
+}
 
-	return window;
+inline bool ApplicationBase::checkKeyRelease(int key) {
+	return glfwGetKey(glfwWindow, key) == GLFW_RELEASE;
+}
+
+inline bool ApplicationBase::checkMouseButtonPress(int key) {
+	int status = glfwGetMouseButton(glfwWindow, key);
+	return status == GLFW_PRESS || status == GLFW_REPEAT;
+}
+
+inline bool ApplicationBase::checkMouseButtonRelease(int key) {
+	return glfwGetMouseButton(glfwWindow, key) == GLFW_RELEASE;
 }
 
 void ApplicationBase::handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
-	case WM_CLOSE:
-		prepared = false;
-		DestroyWindow(hWnd);
-		PostQuitMessage(0);
-		break;
-	case WM_PAINT:
-		ValidateRect(window, NULL);
-		break;
-	case WM_KEYDOWN:
-		switch (wParam)
-		{
-		case KEY_P:
-			paused = !paused;
-			break;
-		case KEY_ESCAPE:
-			PostQuitMessage(0);
-			break;
-		}
-
-		if (camera.firstperson)
-		{
-			switch (wParam)
-			{
-			case KEY_W:
-				camera.keys.up = true;
-				break;
-			case KEY_S:
-				camera.keys.down = true;
-				break;
-			case KEY_A:
-				camera.keys.left = true;
-				break;
-			case KEY_D:
-				camera.keys.right = true;
-				break;
-			}
-		}
-
-		break;
-	case WM_KEYUP:
-		if (camera.firstperson)
-		{
-			switch (wParam)
-			{
-			case KEY_W:
-				camera.keys.up = false;
-				break;
-			case KEY_S:
-				camera.keys.down = false;
-				break;
-			case KEY_A:
-				camera.keys.left = false;
-				break;
-			case KEY_D:
-				camera.keys.right = false;
-				break;
-			}
-		}
-		break;
-	case WM_LBUTTONDOWN:
-		mousePos = glm::vec2((float)LOWORD(lParam), (float)HIWORD(lParam));
-		mouseButtons.left = true;
-		break;
-	case WM_RBUTTONDOWN:
-		mousePos = glm::vec2((float)LOWORD(lParam), (float)HIWORD(lParam));
-		mouseButtons.right = true;
-		break;
-	case WM_MBUTTONDOWN:
-		mousePos = glm::vec2((float)LOWORD(lParam), (float)HIWORD(lParam));
-		mouseButtons.middle = true;
-		break;
-	case WM_LBUTTONUP:
-		mouseButtons.left = false;
-		break;
-	case WM_RBUTTONUP:
-		mouseButtons.right = false;
-		break;
-	case WM_MBUTTONUP:
-		mouseButtons.middle = false;
-		break;
 	case WM_MOUSEWHEEL:
 	{
 		short wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
@@ -907,15 +811,15 @@ void ApplicationBase::windowResize()
 	}
 	prepared = false;
 
-	width = destWidth;
-	height = destHeight;
-
 	int glfwWidth = 0, glfwHeight = 0;
 	glfwGetFramebufferSize(glfwWindow, &glfwWidth, &glfwHeight);
 	while (glfwWidth == 0 || glfwHeight == 0) {
 		glfwGetFramebufferSize(glfwWindow, &glfwWidth, &glfwHeight);
 		glfwWaitEvents();
 	}
+
+	width = destWidth = glfwWidth;
+	height = destHeight = glfwHeight;
 
 	vkDeviceWaitIdle(device);
 	setupSwapChain();
@@ -947,13 +851,10 @@ void ApplicationBase::handleMouseMove(int32_t x, int32_t y)
 	int32_t dx = (int32_t)mousePos.x - x;
 	int32_t dy = (int32_t)mousePos.y - y;
 
+	std::cout << "dx:" << dx << " dy:" << dy << "x:" << x << " y:" << y << std::endl;
+
 	ImGuiIO& io = ImGui::GetIO();
 	bool handled = io.WantCaptureMouse;
-
-	if (handled) {
-		mousePos = glm::vec2((float)x, (float)y);
-		return;
-	}
 
 	if (handled) {
 		mousePos = glm::vec2((float)x, (float)y);

@@ -21,7 +21,6 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#define M_PI 3.14159265358979323846 
 
 class ApplicationExample : public ApplicationBase
 {
@@ -1989,6 +1988,7 @@ public:
 
 ApplicationExample *applicationExample;
 
+//todo: setting.fullscreen
 int main() {
 	try {
 		applicationExample = new ApplicationExample();
