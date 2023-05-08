@@ -259,7 +259,9 @@ void ApplicationBase::prepare()
 	setupFrameBuffer();
 }
 
-void ApplicationBase::fileDropped(std::string filename) { }
+void ApplicationBase::fileDropped(std::string filename) { 
+	std::cout << "drop file into window, file path:" << filename << std::endl;
+}
 
 void ApplicationBase::renderFrame()
 {
@@ -279,29 +281,6 @@ void ApplicationBase::renderFrame()
 	}
 }
 
-void ApplicationBase::renderLoop()
-{
-	destWidth = width;
-	destHeight = height;
-	MSG msg;
-	bool quitMessageReceived = false;
-	while (!quitMessageReceived) {
-		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-			if (msg.message == WM_QUIT) {
-				quitMessageReceived = true;
-				break;
-			}
-		}
-		if (!IsIconic(window)) {
-			renderFrame();
-		}
-	}
-	// Flush device to make sure all resources can be freed 
-	vkDeviceWaitIdle(device);
-}
-
 void ApplicationBase::mainLoop() {
 	destWidth = width;
 	destHeight = height;
@@ -314,17 +293,36 @@ void ApplicationBase::mainLoop() {
 		glfwPollEvents();
 	}
 
+	// Flush device to make sure all resources can be freed 
 	vkDeviceWaitIdle(device);
 }
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
-	app->framebufferResized = true;
+	if (app->prepared) {
+		app->framebufferResized = true;
+		app->destWidth = width;
+		app->destHeight = height;
+		app->windowResize();
+	}
 }
 
 static void cursorPosCallback(GLFWwindow* window, double x, double y) {
 	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
-	app->handleMouseMove((int32_t)x, (int32_t)y);
+	float xpos = static_cast<float>(x);
+	float ypos = static_cast<float>(y);
+	app->handleMouseMove(xpos, ypos);
+}
+
+static void scrollCallback(GLFWwindow* window, double x, double y) {
+	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
+	float wheelDelta = static_cast<float>(y);
+	app->handleMouseScroll(wheelDelta);
+}
+
+static void dropFileCallback(GLFWwindow* window, int count, const char** paths) {
+	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
+	app->handleDropFile(count, paths);
 }
 
 void ApplicationBase::initWindow()
@@ -336,6 +334,8 @@ void ApplicationBase::initWindow()
 
 	glfwSetWindowUserPointer(glfwWindow, this);
 	glfwSetCursorPosCallback(glfwWindow, cursorPosCallback);
+	glfwSetScrollCallback(glfwWindow, scrollCallback);
+	glfwSetDropCallback(glfwWindow, dropFileCallback);
 	glfwSetFramebufferSizeCallback(glfwWindow, framebufferResizeCallback);
 }
 
@@ -511,13 +511,13 @@ void ApplicationBase::processInput() {
 		if (checkKeyPress(GLFW_KEY_W)) {
 			camera.keys.up = true;
 		}
-		else if (checkKeyPress(GLFW_KEY_S)) {
+		if (checkKeyPress(GLFW_KEY_S)) {
 			camera.keys.down = true;
 		}
-		else if (checkKeyPress(GLFW_KEY_A)) {
+		if (checkKeyPress(GLFW_KEY_A)) {
 			camera.keys.left = true;
 		}
-		else if (checkKeyPress(GLFW_KEY_D)) {
+		if (checkKeyPress(GLFW_KEY_D)) {
 			camera.keys.right = true;
 		}
 	}
@@ -525,37 +525,34 @@ void ApplicationBase::processInput() {
 	if (checkKeyPress(GLFW_KEY_P)) {
 		paused = !paused;
 	}
-	else if (checkKeyPress(GLFW_KEY_ESCAPE)) {
+	if (checkKeyPress(GLFW_KEY_ESCAPE)) {
 		glfwSetWindowShouldClose(glfwWindow, GL_TRUE);
 	}
-	else if (checkKeyPress(GLFW_KEY_ESCAPE)) {
-		glfwSetWindowShouldClose(glfwWindow, GL_TRUE);
-	}
-	else if (checkMouseButtonPress(GLFW_MOUSE_BUTTON_LEFT)) {
+	if (checkMouseButtonPress(GLFW_MOUSE_BUTTON_LEFT)) {
 		mouseButtons.left = true;
 		double xPos, yPos;
 		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
-		mousePos = glm::vec2((float)xPos, (float)yPos);
+		mousePos = glm::vec2(static_cast<float>(xPos), static_cast<float>(yPos));
 	}
-	else if (checkMouseButtonPress(GLFW_MOUSE_BUTTON_RIGHT)) {
+	if (checkMouseButtonPress(GLFW_MOUSE_BUTTON_RIGHT)) {
 		mouseButtons.right = true;
 		double xPos, yPos;
 		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
-		mousePos = glm::vec2((float)xPos, (float)yPos);
+		mousePos = glm::vec2(static_cast<float>(xPos), static_cast<float>(yPos));
 	}
-	else if (checkMouseButtonPress(GLFW_MOUSE_BUTTON_MIDDLE)) {
+	if (checkMouseButtonPress(GLFW_MOUSE_BUTTON_MIDDLE)) {
 		mouseButtons.middle = true;
 		double xPos, yPos;
 		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
-		mousePos = glm::vec2((float)xPos, (float)yPos);
+		mousePos = glm::vec2(static_cast<float>(xPos), static_cast<float>(yPos));
 	}
-	else if (checkMouseButtonRelease(GLFW_MOUSE_BUTTON_LEFT)) {
+	if (checkMouseButtonRelease(GLFW_MOUSE_BUTTON_LEFT)) {
 		mouseButtons.left = false;
 	}
-	else if (checkMouseButtonRelease(GLFW_MOUSE_BUTTON_RIGHT)) {
+	if (checkMouseButtonRelease(GLFW_MOUSE_BUTTON_RIGHT)) {
 		mouseButtons.right = false;
 	}
-	else if (checkMouseButtonRelease(GLFW_MOUSE_BUTTON_MIDDLE)) {
+	if (checkMouseButtonRelease(GLFW_MOUSE_BUTTON_MIDDLE)) {
 		mouseButtons.middle = false;
 	}
 }
@@ -576,56 +573,6 @@ inline bool ApplicationBase::checkMouseButtonPress(int key) {
 
 inline bool ApplicationBase::checkMouseButtonRelease(int key) {
 	return glfwGetMouseButton(glfwWindow, key) == GLFW_RELEASE;
-}
-
-void ApplicationBase::handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	switch (uMsg)
-	{
-	case WM_MOUSEWHEEL:
-	{
-		short wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-		camera.translate(glm::vec3(0.0f, 0.0f, -(float)wheelDelta * 0.005f * camera.movementSpeed));
-		break;
-	}
-	case WM_MOUSEMOVE:
-	{
-		handleMouseMove(LOWORD(lParam), HIWORD(lParam));
-		break;
-	}
-	case WM_SIZE:
-		if ((prepared) && (wParam != SIZE_MINIMIZED)) {
-			if ((resizing) || ((wParam == SIZE_MAXIMIZED) || (wParam == SIZE_RESTORED))) {
-				destWidth = LOWORD(lParam);
-				destHeight = HIWORD(lParam);
-				windowResize();
-			}
-		}
-		break;
-	case WM_ENTERSIZEMOVE:
-		resizing = true;
-		break;
-	case WM_EXITSIZEMOVE:
-		resizing = false;
-		break;
-	case WM_DROPFILES:
-		{
-			std::string fname;
-			HDROP hDrop = reinterpret_cast<HDROP>(wParam);
-			// extract files here
-			char filename[MAX_PATH];
-			uint32_t count = DragQueryFileA(hDrop, -1, nullptr, 0);
-			for (uint32_t i = 0; i < count; ++i) {
-				if (DragQueryFileA(hDrop, i, filename, MAX_PATH)) {
-					fname = filename;
-				}
-				break;
-			}
-			DragFinish(hDrop);
-			fileDropped(fname);
-			break;
-		}
-	}
 }
 
 void ApplicationBase::windowResized() {}
@@ -846,18 +793,30 @@ void ApplicationBase::windowResize()
 	prepared = true;
 }
 
-void ApplicationBase::handleMouseMove(int32_t x, int32_t y)
+void ApplicationBase::handleMouseScroll(float delta)
 {
-	int32_t dx = (int32_t)mousePos.x - x;
-	int32_t dy = (int32_t)mousePos.y - y;
+	camera.translate(glm::vec3(0.0f, 0.0f, -delta * 0.2f * camera.movementSpeed));
+}
 
-	std::cout << "dx:" << dx << " dy:" << dy << "x:" << x << " y:" << y << std::endl;
+void ApplicationBase::handleDropFile(int count, const char** paths)
+{
+	for (int i = 0; i < count; ++i) {
+		fileDropped(std::string(paths[i]));
+	}
+}
+
+void ApplicationBase::handleMouseMove(float x, float y)
+{
+	float dx = mousePos.x - x;
+	float dy = mousePos.y - y;
+
+	//std::cout << "dx:" << dx << " dy:" << dy << "x:" << x << " y:" << y << std::endl;
 
 	ImGuiIO& io = ImGui::GetIO();
 	bool handled = io.WantCaptureMouse;
 
 	if (handled) {
-		mousePos = glm::vec2((float)x, (float)y);
+		mousePos = glm::vec2(x, y);
 		return;
 	}
 
@@ -870,7 +829,7 @@ void ApplicationBase::handleMouseMove(int32_t x, int32_t y)
 	if (mouseButtons.middle) {
 		camera.translate(glm::vec3(-dx * 0.01f, -dy * 0.01f, 0.0f));
 	}
-	mousePos = glm::vec2((float)x, (float)y);
+	mousePos = glm::vec2(x, y);
 }
 
 void ApplicationBase::initSwapchain()

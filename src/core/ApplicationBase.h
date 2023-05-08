@@ -34,8 +34,6 @@ class ApplicationBase
 private:	
 	float fpsTimer = 0.0f;
 	uint32_t frameCounter = 0;
-	uint32_t destWidth;
-	uint32_t destHeight;
 	bool resizing = false;
 	inline bool checkKeyPress(int key);
 	inline bool checkKeyRelease(int key);
@@ -75,7 +73,6 @@ protected:
 	VulkanSwapChain swapChain;
 	std::string title = "Vulkan Example";
 	std::string name = "ApplicationExample";
-	void windowResize();
 public: 
 	static std::vector<const char*> args;
 	bool prepared = false;
@@ -112,12 +109,12 @@ public:
 		bool middle = false;
 	} mouseButtons;
 
-	HWND window;
-	HINSTANCE windowInstance;
-
-	HWND setupWindow(HINSTANCE hinstance, WNDPROC wndproc);
-	void handleMouseMove(int32_t x, int32_t y);
-	void handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	void handleMouseMove(float x, float y);
+	void handleMouseScroll(float delta);
+	void handleDropFile(int count, const char** paths);
+	void windowResize();
+	uint32_t destWidth;
+	uint32_t destHeight;
 
 	GLFWwindow* glfwWindow;
 	bool framebufferResized = false;
@@ -138,7 +135,6 @@ public:
 	void initSwapchain();
 	void setupSwapChain();
 
-	void renderLoop();
 	void mainLoop();
 	void processInput();
 	void renderFrame();
