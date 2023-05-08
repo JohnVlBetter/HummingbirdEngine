@@ -508,71 +508,53 @@ void ApplicationBase::initVulkan()
 void ApplicationBase::processInput() {
 	if (camera.firstperson)
 	{
-		if (checkKeyPress(GLFW_KEY_W)) {
+		if (checkKeyPress(glfwWindow, KEY_W)) {
 			camera.keys.up = true;
 		}
-		if (checkKeyPress(GLFW_KEY_S)) {
+		if (checkKeyPress(glfwWindow, KEY_S)) {
 			camera.keys.down = true;
 		}
-		if (checkKeyPress(GLFW_KEY_A)) {
+		if (checkKeyPress(glfwWindow, KEY_A)) {
 			camera.keys.left = true;
 		}
-		if (checkKeyPress(GLFW_KEY_D)) {
+		if (checkKeyPress(glfwWindow, KEY_D)) {
 			camera.keys.right = true;
 		}
 	}
 
-	if (checkKeyPress(GLFW_KEY_P)) {
+	if (checkKeyPress(glfwWindow, KEY_P)) {
 		paused = !paused;
 	}
-	if (checkKeyPress(GLFW_KEY_ESCAPE)) {
+	if (checkKeyPress(glfwWindow, KEY_ESCAPE)) {
 		glfwSetWindowShouldClose(glfwWindow, GL_TRUE);
 	}
-	if (checkMouseButtonPress(GLFW_MOUSE_BUTTON_LEFT)) {
+	if (checkMouseButtonPress(glfwWindow, MOUSE_BUTTON_LEFT)) {
 		mouseButtons.left = true;
 		double xPos, yPos;
 		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
 		mousePos = glm::vec2(static_cast<float>(xPos), static_cast<float>(yPos));
 	}
-	if (checkMouseButtonPress(GLFW_MOUSE_BUTTON_RIGHT)) {
+	if (checkMouseButtonPress(glfwWindow, MOUSE_BUTTON_RIGHT)) {
 		mouseButtons.right = true;
 		double xPos, yPos;
 		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
 		mousePos = glm::vec2(static_cast<float>(xPos), static_cast<float>(yPos));
 	}
-	if (checkMouseButtonPress(GLFW_MOUSE_BUTTON_MIDDLE)) {
+	if (checkMouseButtonPress(glfwWindow, MOUSE_BUTTON_MIDDLE)) {
 		mouseButtons.middle = true;
 		double xPos, yPos;
 		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
 		mousePos = glm::vec2(static_cast<float>(xPos), static_cast<float>(yPos));
 	}
-	if (checkMouseButtonRelease(GLFW_MOUSE_BUTTON_LEFT)) {
+	if (checkMouseButtonRelease(glfwWindow, MOUSE_BUTTON_LEFT)) {
 		mouseButtons.left = false;
 	}
-	if (checkMouseButtonRelease(GLFW_MOUSE_BUTTON_RIGHT)) {
+	if (checkMouseButtonRelease(glfwWindow, MOUSE_BUTTON_RIGHT)) {
 		mouseButtons.right = false;
 	}
-	if (checkMouseButtonRelease(GLFW_MOUSE_BUTTON_MIDDLE)) {
+	if (checkMouseButtonRelease(glfwWindow, MOUSE_BUTTON_MIDDLE)) {
 		mouseButtons.middle = false;
 	}
-}
-
-inline bool ApplicationBase::checkKeyPress(int key) {
-	int status = glfwGetKey(glfwWindow, key);
-	return status == GLFW_PRESS || status == GLFW_REPEAT;
-}
-
-inline bool ApplicationBase::checkKeyRelease(int key) {
-	return glfwGetKey(glfwWindow, key) == GLFW_RELEASE;
-}
-
-inline bool ApplicationBase::checkMouseButtonPress(int key) {
-	int status = glfwGetMouseButton(glfwWindow, key);
-	return status == GLFW_PRESS || status == GLFW_REPEAT;
-}
-
-inline bool ApplicationBase::checkMouseButtonRelease(int key) {
-	return glfwGetMouseButton(glfwWindow, key) == GLFW_RELEASE;
 }
 
 void ApplicationBase::windowResized() {}

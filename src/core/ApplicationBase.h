@@ -30,13 +30,11 @@ private:
 	float fpsTimer = 0.0f;
 	uint32_t frameCounter = 0;
 	bool resizing = false;
-	inline bool checkKeyPress(int key);
-	inline bool checkKeyRelease(int key);
-	inline bool checkMouseButtonPress(int key);
-	inline bool checkMouseButtonRelease(int key);
+
 	PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallback;
 	PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallback;
 	VkDebugReportCallbackEXT debugReportCallback;
+
 	struct MultisampleTarget {
 		struct {
 			VkImage image;
@@ -49,6 +47,7 @@ private:
 			VkDeviceMemory memory;
 		} depth;
 	} multisampleTarget;
+
 protected:
 	VkInstance instance;
 	VkPhysicalDevice physicalDevice;
@@ -66,13 +65,14 @@ protected:
 	VkDescriptorPool descriptorPool;
 	VkPipelineCache pipelineCache;
 	VulkanSwapChain swapChain;
-	std::string title = "Vulkan Example";
-	std::string name = "ApplicationExample";
+
+	std::string title = "Hummingbird Engine";
+	std::string name = "Hummingbird Engine";
 public: 
 	static std::vector<const char*> args;
 	bool prepared = false;
-	uint32_t width = 1280;
-	uint32_t height = 720;
+	uint32_t width = 1920;
+	uint32_t height = 1080;
 	float frameTimer = 1.0f;
 	Camera camera;
 	glm::vec2 mousePos;
@@ -125,12 +125,12 @@ public:
 	virtual void windowResized();
 	virtual void setupFrameBuffer();
 	virtual void prepare();
+	virtual void processInput();
 	virtual void fileDropped(std::string filename);
 
 	void initSwapchain();
 	void setupSwapChain();
 
 	void mainLoop();
-	void processInput();
 	void renderFrame();
 };

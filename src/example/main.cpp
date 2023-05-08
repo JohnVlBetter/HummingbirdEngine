@@ -1302,8 +1302,8 @@ public:
 
 			struct PushBlockIrradiance {
 				glm::mat4 mvp;
-				float deltaPhi = (2.0f * float(M_PI)) / 180.0f;
-				float deltaTheta = (0.5f * float(M_PI)) / 64.0f;
+				float deltaPhi = (2.0f * glm::pi<float>()) / 180.0f;
+				float deltaTheta = (0.5f * glm::pi<float>()) / 64.0f;
 			} pushBlockIrradiance;
 
 			struct PushBlockPrefilterEnv {
@@ -1493,11 +1493,11 @@ public:
 					// Pass parameters for current pass using a push constant block
 					switch (target) {
 						case IRRADIANCE:
-							pushBlockIrradiance.mvp = glm::perspective((float)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
+							pushBlockIrradiance.mvp = glm::perspective(glm::half_pi<float>(), 1.0f, 0.1f, 512.0f) * matrices[f];
 							vkCmdPushConstants(cmdBuf, pipelinelayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlockIrradiance), &pushBlockIrradiance);
 							break;
 						case PREFILTEREDENV:
-							pushBlockPrefilterEnv.mvp = glm::perspective((float)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
+							pushBlockPrefilterEnv.mvp = glm::perspective(glm::half_pi<float>(), 1.0f, 0.1f, 512.0f) * matrices[f];
 							pushBlockPrefilterEnv.roughness = (float)m / (float)(numMips - 1);
 							vkCmdPushConstants(cmdBuf, pipelinelayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlockPrefilterEnv), &pushBlockPrefilterEnv);
 							break;
@@ -1986,10 +1986,8 @@ int main() {
 	try {
 		applicationExample = new ApplicationExample();
 		applicationExample->initWindow();
-		//applicationExample->setupWindow(hInstance, WndProc);
 		applicationExample->initVulkan();
 		applicationExample->prepare();
-		//applicationExample->renderLoop();
 		applicationExample->mainLoop();
 		delete(applicationExample);
 	}
@@ -2000,26 +1998,3 @@ int main() {
 
 	return EXIT_SUCCESS;
 }
-/*
-LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	if (applicationExample != NULL)
-	{
-		applicationExample->handleMessages(hWnd, uMsg, wParam, lParam);
-	}
-	return (DefWindowProc(hWnd, uMsg, wParam, lParam));
-}
-
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
-{
-	for (int32_t i = 0; i < __argc; i++) { ApplicationExample::args.push_back(__argv[i]); };
-	applicationExample = new ApplicationExample();
-	applicationExample->initVulkan();
-	//applicationExample->setupWindow(hInstance, WndProc);
-	applicationExample->initWindow();
-	applicationExample->prepare();
-	//applicationExample->renderLoop();
-	applicationExample->mainLoop();
-	delete(applicationExample);
-	return 0;
-}*/
