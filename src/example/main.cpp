@@ -1769,25 +1769,18 @@ public:
 
 		if (ui->header("Scene")) {
 			if (ui->button("Open gltf file")) {
-				std::string filename = "";
-				char buffer[MAX_PATH];
-				OPENFILENAME ofn;
-				ZeroMemory(&buffer, sizeof(buffer));
-				ZeroMemory(&ofn, sizeof(ofn));
-				ofn.lStructSize = sizeof(ofn);
-				ofn.lpstrFilter = "glTF files\0*.gltf;*.glb\0";
-				ofn.lpstrFile = buffer;
-				ofn.nMaxFile = MAX_PATH;
-				ofn.lpstrTitle = "Select a glTF file to load";
-				ofn.Flags = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
-				if (GetOpenFileNameA(&ofn)) {
-					filename = buffer;
-				}
-				if (!filename.empty()) {
+
+				char const* lFilterPatterns[2] = { "*.gltf", "*.glb" };
+				std::string defaultPath = GetModelPath() +"DamagedHelmet/glTF/DamagedHelmet.gltf";
+				std::string fileName;
+				if (OpenFileDialog(fileName, "Select a glTF file to load", defaultPath.c_str(), lFilterPatterns, 2, "gltf files")) {
 					vkDeviceWaitIdle(device);
-					loadScene(filename);
+					loadScene(std::string(fileName));
 					setupDescriptors();
 					updateCBs = true;
+				}
+				else {
+					ShowErrorMessageBox("Failed to open glTF file");
 				}
 			}
 			if (ui->combo("Environment", selectedEnvironment, environments)) {

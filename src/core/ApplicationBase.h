@@ -3,13 +3,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <windows.h>
-#include <fcntl.h>
-#include <io.h>
-
 #include <iostream>
 #include <chrono>
-#include <sys/stat.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

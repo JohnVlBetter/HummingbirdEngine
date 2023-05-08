@@ -14,12 +14,19 @@ include_directories(3rd/glm)
 include_directories(3rd/gli)
 include_directories(3rd/imgui)
 include_directories(3rd/tinygltf)
+include_directories(3rd/tinyfiledialogs)
 include_directories(3rd/vulkan/Include)
 
 #glfw
 include_directories(3rd/glfw/include)
 set(GLFW_DLL_DIR ${CMAKE_SOURCE_DIR}/3rd/glfw/lib-vc2022/glfw3.lib)
 message("${GLFW_DLL_DIR}")
+
+#tinyfiledialogs
+set(TINY_FILE_DIALOGS_LIB_DIR ${CMAKE_SOURCE_DIR}/3rd/tinyfiledialogs/Lib/tinyfiledialogs64.lib)
+message("${TINY_FILE_DIALOGS_LIB_DIR}")
+set(TINY_FILE_DIALOGS_DLL_DIR ${CMAKE_SOURCE_DIR}/3rd/tinyfiledialogs/Lib/tinyfiledialogs64.dll)
+message("${TINY_FILE_DIALOGS_DLL_DIR}")
 
 #core
 include_directories(src/core)

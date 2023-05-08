@@ -8,6 +8,8 @@
 #include <map>
 #include <windows.h>
 
+#include <tinyfiledialogs.h>
+
 void ReadDirectory(const std::string& directory, const std::string& pattern, std::map<std::string, std::string>& filelist, bool recursive)
 {
 	std::string searchpattern(directory + "/" + pattern);
@@ -38,6 +40,29 @@ void ReadDirectory(const std::string& directory, const std::string& pattern, std
 			FindClose(hFind);
 		}
 	}
+}
+
+bool OpenFileDialog(std::string& filePath, const char* title, const char* defaultPath,
+	const char* const* filterPatterns, int filterPatternsCount, char const* singleFilterDescription) {
+	char* lTheOpenFileName = tinyfd_openFileDialog(
+		title,
+		defaultPath,
+		filterPatternsCount,
+		filterPatterns,
+		singleFilterDescription,
+		0);
+
+	if(lTheOpenFileName) filePath = std::string(lTheOpenFileName);
+	return lTheOpenFileName;
+}
+
+void ShowErrorMessageBox(const char* message) {
+	tinyfd_messageBox(
+		"Error",
+		message,
+		"ok",
+		"error",
+		0);
 }
 
 const std::string assetpath = "../../../artRes/";
