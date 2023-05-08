@@ -14,6 +14,7 @@ include_directories(3rd/glm)
 include_directories(3rd/gli)
 include_directories(3rd/imgui)
 include_directories(3rd/tinygltf)
+include_directories(3rd/spdlog)
 include_directories(3rd/tinyfiledialogs)
 include_directories(3rd/vulkan/Include)
 
