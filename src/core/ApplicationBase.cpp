@@ -62,6 +62,8 @@ VkResult ApplicationBase::createInstance(bool enableValidation)
 }
 void ApplicationBase::prepare()
 {
+	LOG_INFO("Prepare...");
+
 	/*
 		Swapchain
 	*/
@@ -325,6 +327,7 @@ static void dropFileCallback(GLFWwindow* window, int count, const char** paths) 
 
 void ApplicationBase::initWindow()
 {
+	LOG_INFO("Window init...");
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -371,10 +374,13 @@ ApplicationBase::~ApplicationBase()
 
 	glfwDestroyWindow(glfwWindow);
 	glfwTerminate();
+	LOG_INFO("Close");
 }
 
 void ApplicationBase::initVulkan()
 {
+	LOG_INFO("Vulkan init...");
+
 	VkResult err;
 
 	/*

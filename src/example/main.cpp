@@ -342,21 +342,21 @@ public:
 
 	void loadScene(std::string filename)
 	{
-		std::cout << "Loading scene from " << filename << std::endl;
+		LOG_INFO("Loading scene from {}", filename);
 		models.scene.destroy(device);
 		animationIndex = 0;
 		animationTimer = 0.0f;
 		auto tStart = std::chrono::high_resolution_clock::now();
 		models.scene.loadFromFile(filename, vulkanDevice, queue);
 		auto tFileLoad = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - tStart).count();
-		std::cout << "Loading took " << tFileLoad << " ms" << std::endl;
+		LOG_INFO("Loading took {} ms", tFileLoad);
 		camera.setPosition({ 0.0f, 0.0f, 1.0f });
 		camera.setRotation({ 0.0f, 0.0f, 0.0f });
 	}
 
 	void loadEnvironment(std::string filename)
 	{
-		std::cout << "Loading environment from " << filename << std::endl;
+		LOG_INFO("Loading environment from {}", filename);
 		if (textures.environmentCube.image) {
 			textures.environmentCube.destroy();
 			textures.irradianceCube.destroy();
@@ -371,8 +371,7 @@ public:
 		const std::string assetpath = GetAssetPath();
 		struct stat info;
 		if (stat(assetpath.c_str(), &info) != 0) {
-			std::string msg = "Could not locate asset path in \"" + assetpath + "\".\nMake sure binary is run from correct relative directory!";
-			std::cerr << msg << std::endl;
+			LOG_ERROR("Could not locate asset path in \"{}\".\nMake sure binary is run from correct relative directory!", assetpath);
 			exit(-1);
 		}
 		ReadDirectory(GetEnvironmentPath(), "*.ktx", environments, false);
@@ -381,25 +380,6 @@ public:
 
 		std::string sceneFile = GetModelPath() + "DamagedHelmet/glTF/DamagedHelmet.gltf";
 		std::string envMapFile = GetEnvironmentPath() + "papermill.ktx";
-		for (size_t i = 0; i < args.size(); i++) {
-			if ((std::string(args[i]).find(".gltf") != std::string::npos) || (std::string(args[i]).find(".glb") != std::string::npos)) {
-				std::ifstream file(args[i]);
-				if (file.good()) {
-					sceneFile = args[i];
-				} else {
-					std::cout << "could not load \"" << args[i] << "\"" << std::endl;
-				}
-			}
-			if (std::string(args[i]).find(".ktx") != std::string::npos) {
-				std::ifstream file(args[i]);
-				if (file.good()) {
-					envMapFile = args[i];
-				}
-				else {
-					std::cout << "could not load \"" << args[i] << "\"" << std::endl;
-				}
-			}
-		}
 
 		loadScene(sceneFile.c_str());
 		models.skybox.loadFromFile(GetModelPath() + "Box/glTF-Embedded/Box.gltf", vulkanDevice, queue);
@@ -1056,7 +1036,7 @@ public:
 
 		auto tEnd = std::chrono::high_resolution_clock::now();
 		auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-		std::cout << "Generating BRDF LUT took " << tDiff << " ms" << std::endl;
+		LOG_INFO("Generating BRDF LUT took {} ms", tDiff);
 	}
 
 	/*
@@ -1616,7 +1596,7 @@ public:
 
 			auto tEnd = std::chrono::high_resolution_clock::now();
 			auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-			std::cout << "Generating cube map with " << numMips << " mip levels took " << tDiff << " ms" << std::endl;
+			LOG_INFO("Generating cube map with {0} mip levels took {1} ms", numMips, tDiff);
 		}
 	}
 
@@ -1992,7 +1972,7 @@ int main() {
 		delete(applicationExample);
 	}
 	catch (const std::exception& e) {
-		std::cerr << e.what() << std::endl;
+		LOG_ERROR(e.what());
 		return EXIT_FAILURE;
 	}
 
