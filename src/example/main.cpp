@@ -16,7 +16,6 @@
 
 #include "UI.hpp"
 #include "FileUtils.hpp"
-#include "Log.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

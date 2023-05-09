@@ -78,7 +78,7 @@ VkPipelineShaderStageCreateInfo loadShader(VkDevice device, std::string filename
 		delete[] shaderCode;
 	}
 	else {
-		std::cerr << "Error: Could not open shader file \"" << filename << "\"" << std::endl;
+		LOG_ERROR("Could not open shader file {}", filename);
 		shaderStage.module = VK_NULL_HANDLE;
 	}
 

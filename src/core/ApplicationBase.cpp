@@ -4,20 +4,18 @@ std::vector<const char*> ApplicationBase::args;
 
 VKAPI_ATTR VkBool32 VKAPI_CALL debugMessageCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t srcObject, size_t location, int32_t msgCode, const char * pLayerPrefix, const char * pMsg, void * pUserData)
 {
-	std::string prefix("");
+	std::stringstream debugMessage;
+	debugMessage << " [" << pLayerPrefix << "] Code " << msgCode << " : " << pMsg;
+
 	if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) {
-		prefix += "ERROR:";
+		LOG_ERROR(debugMessage.str());
 	};
 	if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT) {
-		prefix += "WARNING:";
+		LOG_WARN(debugMessage.str());
 	};
 	if (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT) {
-		prefix += "DEBUG:";
+		LOG_DEBUG(debugMessage.str());
 	}
-	std::stringstream debugMessage;
-	debugMessage << prefix << " [" << pLayerPrefix << "] Code " << msgCode << " : " << pMsg;
-	std::cout << debugMessage.str() << "\n";
-	fflush(stdout);
 	return VK_FALSE;
 }
 
@@ -259,8 +257,8 @@ void ApplicationBase::prepare()
 	setupFrameBuffer();
 }
 
-void ApplicationBase::fileDropped(std::string filename) { 
-	std::cout << "drop file into window, file path:" << filename << std::endl;
+void ApplicationBase::fileDropped(std::string filename) {
+	LOG_INFO("drop file into window, file path:{}", filename);
 }
 
 void ApplicationBase::renderFrame()
@@ -341,35 +339,6 @@ void ApplicationBase::initWindow()
 
 ApplicationBase::ApplicationBase()
 {
-	/*char* numConvPtr;
-	// Parse command line arguments
-	for (size_t i = 0; i < args.size(); i++)
-	{
-		if (args[i] == std::string("-validation")) {
-			settings.validation = true;
-		}
-		if (args[i] == std::string("-vsync")) {
-			settings.vsync = true;
-		}
-		if ((args[i] == std::string("-f")) || (args[i] == std::string("--fullscreen"))) {
-			settings.fullscreen = true;
-		}
-		if ((args[i] == std::string("-w")) || (args[i] == std::string("--width"))) {
-			uint32_t w = strtol(args[i + 1], &numConvPtr, 10);
-			if (numConvPtr != args[i + 1]) { width = w; };
-		}
-		if ((args[i] == std::string("-h")) || (args[i] == std::string("--height"))) {
-			uint32_t h = strtol(args[i + 1], &numConvPtr, 10);
-			if (numConvPtr != args[i + 1]) { height = h; };
-		}
-	}
-	
-	AllocConsole();
-	AttachConsole(GetCurrentProcessId());
-	FILE *stream;
-	freopen_s(&stream, "CONOUT$", "w+", stdout);
-	freopen_s(&stream, "CONOUT$", "w+", stderr);
-	SetConsoleTitle(TEXT("Vulkan validation output"));*/
 }
 
 ApplicationBase::~ApplicationBase()
@@ -413,7 +382,7 @@ void ApplicationBase::initVulkan()
 	*/
 	err = createInstance(settings.validation);
 	if (err) {
-		std::cerr << "Could not create Vulkan instance!" << std::endl;
+		LOG_ERROR("Could not create Vulkan instance!");
 		exit(err);
 	}
 
@@ -439,26 +408,11 @@ void ApplicationBase::initVulkan()
 	std::vector<VkPhysicalDevice> physicalDevices(gpuCount);
 	err = vkEnumeratePhysicalDevices(instance, &gpuCount, physicalDevices.data());
 	if (err) {
-		std::cerr << "Could not enumerate physical devices!" << std::endl;
+		LOG_ERROR("Could not enumerate physical devices!");
 		exit(err);
 	}
-	uint32_t selectedDevice = 0;
-	for (size_t i = 0; i < args.size(); i++) {
-		if ((args[i] == std::string("-g")) || (args[i] == std::string("--gpu"))) {
-			char* endptr;
-			uint32_t index = strtol(args[i + 1], &endptr, 10);
-			if (endptr != args[i + 1])  { 
-				if (index > gpuCount - 1) {
-					std::cerr << "Selected device index " << index << " is out of range, reverting to device 0 (use -listgpus to show available Vulkan devices)" << std::endl;
-				} else {
-					std::cout << "Selected Vulkan device " << index << std::endl;
-					selectedDevice = index;
-				}
-			};
-			break;
-		}
-	}
 
+	uint32_t selectedDevice = 0;
 	physicalDevice = physicalDevices[selectedDevice];
 
 	vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
@@ -476,7 +430,7 @@ void ApplicationBase::initVulkan()
 	std::vector<const char*> enabledExtensions{};
 	VkResult res = vulkanDevice->createLogicalDevice(enabledFeatures, enabledExtensions);
 	if (res != VK_SUCCESS) {
-		std::cerr << "Could not create Vulkan device!" << std::endl;
+		LOG_ERROR("Could not create Vulkan device!");
 		exit(res);
 	}
 	device = vulkanDevice->logicalDevice;
@@ -791,8 +745,6 @@ void ApplicationBase::handleMouseMove(float x, float y)
 {
 	float dx = mousePos.x - x;
 	float dy = mousePos.y - y;
-
-	//std::cout << "dx:" << dx << " dy:" << dy << "x:" << x << " y:" << y << std::endl;
 
 	ImGuiIO& io = ImGui::GetIO();
 	bool handled = io.WantCaptureMouse;

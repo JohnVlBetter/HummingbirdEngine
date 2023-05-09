@@ -18,6 +18,7 @@
 #include "Macros.h"
 #include "Camera.hpp"
 #include "Keycodes.hpp"
+#include "Log.hpp"
 
 #include "VulkanDevice.hpp"
 #include "VulkanSwapChain.hpp"

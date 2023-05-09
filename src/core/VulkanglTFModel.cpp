@@ -567,7 +567,7 @@ namespace vkglTF
 							}
 							default:
 								// Not supported by spec
-								std::cerr << "Joint component type " << jointComponentType << " not supported!" << std::endl;
+								LOG_ERROR("Joint component type {} not supported!", jointComponentType);
 								break;
 							}
 						}
@@ -618,7 +618,7 @@ namespace vkglTF
 						break;
 					}
 					default:
-						std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
+						LOG_ERROR("Index component type {} not supported!", accessor.componentType);
 						return;
 					}
 				}					
@@ -730,7 +730,7 @@ namespace vkglTF
 			return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
 		}
 
-		std::cerr << "Unknown wrap mode for getVkWrapMode: " << wrapMode << std::endl;
+		LOG_ERROR("Unknown wrap mode for getVkWrapMode: {}", wrapMode);
 		return VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	}
 
@@ -752,7 +752,7 @@ namespace vkglTF
 			return VK_FILTER_LINEAR;
 		}
 
-		std::cerr << "Unknown filter mode for getVkFilterMode: " << filterMode << std::endl;
+		LOG_ERROR("Unknown filter mode for getVkFilterMode: {}", filterMode);
 		return VK_FILTER_NEAREST;
 	}
 
@@ -930,7 +930,7 @@ namespace vkglTF
 						break;
 					}
 					default: {
-						std::cout << "unknown type" << std::endl;
+						LOG_INFO("unknown type");
 						break;
 					}
 					}
@@ -953,7 +953,7 @@ namespace vkglTF
 					channel.path = AnimationChannel::PathType::SCALE;
 				}
 				if (source.target_path == "weights") {
-					std::cout << "weights not yet supported, skipping channel" << std::endl;
+					LOG_INFO("weights not yet supported, skipping channel");
 					continue;
 				}
 				channel.samplerIndex = source.sampler;
@@ -1028,7 +1028,7 @@ namespace vkglTF
 		}
 		else {
 			// TODO: throw
-			std::cerr << "Could not load gltf file: " << error << std::endl;
+			LOG_ERROR("Could not load gltf file: {}", error);
 			return;
 		}
 
@@ -1181,11 +1181,11 @@ namespace vkglTF
 	void Model::updateAnimation(uint32_t index, float time)
 	{
 		if (animations.empty()) {
-			std::cout << ".glTF does not contain animation." << std::endl;
+			LOG_INFO(".glTF does not contain animation.");
 			return;
 		}
 		if (index > static_cast<uint32_t>(animations.size()) - 1) {
-			std::cout << "No animation with index " << index << std::endl;
+			LOG_INFO("No animation with index {}",index);
 			return;
 		}
 		Animation &animation = animations[index];

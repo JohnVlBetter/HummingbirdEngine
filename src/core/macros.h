@@ -1,13 +1,15 @@
 #pragma once
 
 #include "vulkan/vulkan.h"
+#include "Log.hpp"
 
 #define VK_CHECK_RESULT(f)																				\
 {																										\
 	VkResult res = (f);																					\
 	if (res != VK_SUCCESS)																				\
 	{																									\
-		std::cout << "Fatal : VkResult is \"" << res << "\" in " << __FILE__ << " at line " << __LINE__ << std::endl; \
+		Log::getInstance()->getLogger()->error("Fatal : VkResult is {}", res);							\
+		Log::getInstance()->getAsyncLogger()->error("Fatal : VkResult is {}", res);						\
 		assert(res == VK_SUCCESS);																		\
 	}																									\
 }

@@ -10,8 +10,6 @@
 #include <time.h>
 #include <chrono>
 
-#include "FileUtils.hpp"
-
 static inline int NowDateToInt()
 {
 	time_t now;
@@ -75,7 +73,7 @@ public:
 			
 			int date = NowDateToInt();
 			int time = NowTimeToInt();
-			std::string logFilePath = GetLogPath() + std::to_string(date) + '-' + std::to_string(time) + ".txt";
+			std::string logFilePath = "../../../log/" + std::to_string(date) + '-' + std::to_string(time) + ".txt";
 			async_logger = spdlog::basic_logger_mt<spdlog::async_factory>("HBAsyncLogger", logFilePath);
 			async_logger->set_level(spdlog::level::warn);
 			async_logger->flush_on(spdlog::level::warn);

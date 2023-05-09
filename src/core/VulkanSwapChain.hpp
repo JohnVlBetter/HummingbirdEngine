@@ -101,13 +101,13 @@ public:
 
 		// Exit if either a graphics or a presenting queue hasn't been found
 		if (graphicsQueueNodeIndex == UINT32_MAX || presentQueueNodeIndex == UINT32_MAX) {
-			std::cerr << "Could not find a graphics and/or presenting queue!" << std::endl;
+			LOG_ERROR("Could not find a graphics and/or presenting queue!");
 			exit(-1);
 		}
 
 		// todo : Add support for separate graphics and presenting queue
 		if (graphicsQueueNodeIndex != presentQueueNodeIndex) {
-			std::cerr << "Separate graphics and presenting queues are not supported yet!" << std::endl;
+			LOG_ERROR("Separate graphics and presenting queues are not supported yet!");
 			exit(-1);
 		}
 
