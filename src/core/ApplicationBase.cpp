@@ -327,11 +327,22 @@ static void dropFileCallback(GLFWwindow* window, int count, const char** paths) 
 
 void ApplicationBase::initWindow()
 {
-	LOG_INFO("Window init...");
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
+
+	if (settings.fullscreen) {
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+		width = destWidth = mode->width;
+		height = destHeight = mode->height;
+		glfwWindow = glfwCreateWindow(width, height, title.c_str(), monitor, nullptr);
+		LOG_INFO("Window mode: fullscreen. Width:{0} Height:{1}", width, height);
+	}
+	else {
+		glfwWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
+		LOG_INFO("Window mode: windowe. Width:{0} Height:{1}", width, height);
+	}
 
 	glfwSetWindowUserPointer(glfwWindow, this);
 	glfwSetCursorPosCallback(glfwWindow, cursorPosCallback);

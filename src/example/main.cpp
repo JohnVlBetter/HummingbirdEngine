@@ -1961,7 +1961,6 @@ public:
 
 ApplicationExample *applicationExample;
 
-//todo: setting.fullscreen
 int main() {
 	try {
 		applicationExample = new ApplicationExample();
