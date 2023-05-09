@@ -13,6 +13,7 @@
 [Rr]eleases/
 x64/
 build/
+log/
 bld/
 [Bb]in/
 [Oo]bj/

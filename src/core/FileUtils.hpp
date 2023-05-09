@@ -90,3 +90,9 @@ const std::string GetEnvironmentPath() {
 const std::string GetTexturePath() {
 	return assetpath + "textures/";
 }
+
+const std::string logpath = "../../../log/";
+
+const std::string GetLogPath() {
+	return logpath;
+}
