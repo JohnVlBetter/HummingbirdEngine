@@ -1,3 +1,7 @@
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_MSC_SECURE_CRT
+
 #include "ApplicationBase.h"
 
 std::vector<const char*> ApplicationBase::args;
@@ -342,6 +346,13 @@ void ApplicationBase::initWindow()
 	else {
 		glfwWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
 		LOG_INFO("Window mode: windowe. Width:{0} Height:{1}", width, height);
+	}
+
+	if (!iconPath.empty()) {
+		GLFWimage images[1];
+		images[0].pixels = stbi_load(iconPath.c_str(), &images[0].width, &images[0].height, 0, 4);
+		glfwSetWindowIcon(glfwWindow, 1, images);
+		stbi_image_free(images[0].pixels);
 	}
 
 	glfwSetWindowUserPointer(glfwWindow, this);

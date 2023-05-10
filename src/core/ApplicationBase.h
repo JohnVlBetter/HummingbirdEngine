@@ -69,7 +69,8 @@ public:
 	static std::vector<const char*> args;
 	bool prepared = false;
 	uint32_t width = 1920;
-	uint32_t height = 1080;
+	uint32_t height = 1080; 
+	std::string iconPath;
 	float frameTimer = 1.0f;
 	Camera camera;
 	glm::vec2 mousePos;

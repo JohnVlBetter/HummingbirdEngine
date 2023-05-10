@@ -129,6 +129,9 @@ public:
 	ApplicationExample() : ApplicationBase()
 	{
 		title = "Hummingbird Engine";
+		iconPath = GetTexturePath() + "icon.png";
+		width = 2560;
+		height = 1440;
 	}
 
 	~ApplicationExample()
