@@ -9,7 +9,7 @@
 
 #include "Macros.h"
 
-namespace vks
+namespace hbvk
 {	
 	struct VulkanDevice
 	{

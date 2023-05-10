@@ -6,10 +6,6 @@
 #include <iostream>
 #include <chrono>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/glm.hpp>
 #include <string>
 #include <sstream>
 #include <array>
@@ -56,7 +52,7 @@ protected:
 	VkPhysicalDeviceFeatures deviceFeatures;
 	VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
 	VkDevice device;
-	vks::VulkanDevice *vulkanDevice;
+	hbvk::VulkanDevice *vulkanDevice;
 	VkQueue queue;
 	VkFormat depthFormat;
 	VkCommandPool cmdPool;

@@ -19,7 +19,7 @@ private:
 	VkDevice device;
 public:
 	Buffer vertexBuffer, indexBuffer;
-	vks::Texture2D fontTexture;
+	hbvk::Texture2D fontTexture;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;
 	VkDescriptorPool descriptorPool;
@@ -31,7 +31,7 @@ public:
 		glm::vec2 translate;
 	} pushConstBlock;
 
-	UI(vks::VulkanDevice *vulkanDevice, VkRenderPass renderPass, VkQueue queue, VkPipelineCache pipelineCache, VkSampleCountFlagBits multiSampleCount) {
+	UI(hbvk::VulkanDevice *vulkanDevice, VkRenderPass renderPass, VkQueue queue, VkPipelineCache pipelineCache, VkSampleCountFlagBits multiSampleCount) {
 
 		this->device = vulkanDevice->logicalDevice;
 

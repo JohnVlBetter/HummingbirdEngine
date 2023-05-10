@@ -7,30 +7,21 @@
 #include <map>
 #include "algorithm"
 
-#include "vulkan/vulkan.h"
-
 #include "ApplicationBase.h"
-#include "VulkanTexture.hpp"
 #include "VulkanglTFModel.h"
-#include "VulkanUtils.hpp"
 
 #include "UI.hpp"
 #include "FileUtils.hpp"
-
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 class ApplicationExample : public ApplicationBase
 {
 public:
 	struct Textures {
-		vks::TextureCubeMap environmentCube;
-		vks::Texture2D empty;
-		vks::Texture2D lutBrdf;
-		vks::TextureCubeMap irradianceCube;
-		vks::TextureCubeMap prefilteredCube;
+		hbvk::TextureCubeMap environmentCube;
+		hbvk::Texture2D empty;
+		hbvk::Texture2D lutBrdf;
+		hbvk::TextureCubeMap irradianceCube;
+		hbvk::TextureCubeMap prefilteredCube;
 	} textures;
 
 	struct Models {
@@ -178,19 +169,19 @@ public:
 		delete ui;
 	}
 
-	void renderNode(vkglTF::Node *node, uint32_t cbIndex, vkglTF::Material::AlphaMode alphaMode) {
+	void renderNode(vkglTF::Node *node, uint32_t cbIndex, Material::AlphaMode alphaMode) {
 		if (node->mesh) {
 			// Render mesh primitives
-			for (vkglTF::Primitive * primitive : node->mesh->primitives) {
+			for (Primitive * primitive : node->mesh->primitives) {
 				if (primitive->material.alphaMode == alphaMode) {
 
 					VkPipeline pipeline = VK_NULL_HANDLE;
 					switch (alphaMode) {
-					case vkglTF::Material::ALPHAMODE_OPAQUE:
-					case vkglTF::Material::ALPHAMODE_MASK:
+					case Material::ALPHAMODE_OPAQUE:
+					case Material::ALPHAMODE_MASK:
 						pipeline = primitive->material.doubleSided ? pipelines.pbrDoubleSided : pipelines.pbr;
 						break;
-					case vkglTF::Material::ALPHAMODE_BLEND:
+					case Material::ALPHAMODE_BLEND:
 						pipeline = pipelines.pbrAlphaBlend;
 						break;
 					}
@@ -216,7 +207,7 @@ public:
 					pushConstBlockMaterial.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
 					pushConstBlockMaterial.occlusionTextureSet = primitive->material.occlusionTexture != nullptr ? primitive->material.texCoordSets.occlusion : -1;
 					pushConstBlockMaterial.emissiveTextureSet = primitive->material.emissiveTexture != nullptr ? primitive->material.texCoordSets.emissive : -1;
-					pushConstBlockMaterial.alphaMask = static_cast<float>(primitive->material.alphaMode == vkglTF::Material::ALPHAMODE_MASK);
+					pushConstBlockMaterial.alphaMask = static_cast<float>(primitive->material.alphaMode == Material::ALPHAMODE_MASK);
 					pushConstBlockMaterial.alphaMaskCutoff = primitive->material.alphaCutoff;
 
 					// TODO: glTF specs states that metallic roughness should be preferred, even if specular glosiness is present
@@ -320,16 +311,16 @@ public:
 
 			// Opaque primitives first
 			for (auto node : model.nodes) {
-				renderNode(node, i, vkglTF::Material::ALPHAMODE_OPAQUE);
+				renderNode(node, i, Material::ALPHAMODE_OPAQUE);
 			}
 			// Alpha masked primitives
 			for (auto node : model.nodes) {
-				renderNode(node, i, vkglTF::Material::ALPHAMODE_MASK);
+				renderNode(node, i, Material::ALPHAMODE_MASK);
 			}
 			// Transparent primitives
 			// TODO: Correct depth sorting
 			for (auto node : model.nodes) {
-				renderNode(node, i, vkglTF::Material::ALPHAMODE_BLEND);
+				renderNode(node, i, Material::ALPHAMODE_BLEND);
 			}
 
 			// User interface
@@ -1050,7 +1041,7 @@ public:
 
 		for (uint32_t target = 0; target < PREFILTEREDENV + 1; target++) {
 
-			vks::TextureCubeMap cubemap;
+			hbvk::TextureCubeMap cubemap;
 
 			auto tStart = std::chrono::high_resolution_clock::now();
 

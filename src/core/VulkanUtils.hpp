@@ -20,7 +20,7 @@ struct Buffer {
 	VkDescriptorBufferInfo descriptor;
 	int32_t count = 0;
 	void *mapped = nullptr;
-	void create(vks::VulkanDevice *device, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, bool map = true) {
+	void create(hbvk::VulkanDevice *device, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, bool map = true) {
 		this->device = device->logicalDevice;
 		device->createBuffer(usageFlags, memoryPropertyFlags, size, &buffer, &memory);
 		descriptor = { buffer, 0, size };

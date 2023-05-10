@@ -439,7 +439,7 @@ void ApplicationBase::initVulkan()
 	/*
 		Device creation
 	*/
-	vulkanDevice = new vks::VulkanDevice(physicalDevice);
+	vulkanDevice = new hbvk::VulkanDevice(physicalDevice);
 	VkPhysicalDeviceFeatures enabledFeatures{};
 	if (deviceFeatures.samplerAnisotropy) {
 		enabledFeatures.samplerAnisotropy = VK_TRUE;

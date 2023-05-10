@@ -3,6 +3,18 @@
 #include "vulkan/vulkan.h"
 #include "Log.hpp"
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <gli/gli.hpp>
+#include <glm/gtx/string_cast.hpp>
+
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+#include "tiny_gltf.h"
+
 #define VK_CHECK_RESULT(f)																				\
 {																										\
 	VkResult res = (f);																					\
