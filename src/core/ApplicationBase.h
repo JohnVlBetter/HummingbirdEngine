@@ -63,6 +63,8 @@ protected:
 	VkPipelineCache pipelineCache;
 	VulkanSwapChain swapChain;
 
+	bool screenshotSaved = false;
+
 	std::string title = "Hummingbird Engine";
 	std::string name = "Hummingbird Engine";
 public: 
@@ -133,4 +135,5 @@ public:
 	void renderFrame();
 
 	void write2JPG(char const* filename, int x, int y, int comp, const void* data, int quality);
+	void saveScreenshot(std::string filename);
 };
