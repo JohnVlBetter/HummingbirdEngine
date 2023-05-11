@@ -1,6 +1,7 @@
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_MSC_SECURE_CRT
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 
 #include "ApplicationBase.h"
 
@@ -283,6 +284,11 @@ void ApplicationBase::renderFrame()
 		fpsTimer = 0.0f;
 		frameCounter = 0;
 	}
+}
+
+void ApplicationBase::write2JPG(char const* filename, int x, int y, int comp, const void* data, int quality)
+{
+	stbi_write_jpg(filename, x, y, comp, data, quality);
 }
 
 void ApplicationBase::mainLoop() {

@@ -131,4 +131,6 @@ public:
 
 	void mainLoop();
 	void renderFrame();
+
+	void write2JPG(char const* filename, int x, int y, int comp, const void* data, int quality);
 };

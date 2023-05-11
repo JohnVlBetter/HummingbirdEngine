@@ -12,7 +12,7 @@
 #include <gli/gli.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#define TINYGLTF_NO_STB_IMAGE_WRITE
+//#define TINYGLTF_NO_STB_IMAGE_WRITE
 #include "tiny_gltf.h"
 
 #define VK_CHECK_RESULT(f)																				\

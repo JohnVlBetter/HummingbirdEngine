@@ -132,8 +132,8 @@ public:
 	{
 		title = "Hummingbird Engine";
 		iconPath = GetTexturePath() + "icon.png";
-		width = 2560;
-		height = 1440;
+		width = 720;
+		height = 500;
 	}
 
 	~ApplicationExample()
@@ -502,7 +502,34 @@ public:
 		vkMapMemory(device, dstImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&data);
 		data += subResourceLayout.offset;
 
-		std::string screenShotSavePath = GetScreenshotPath() + filename;
+		bool colorSwizzle = false;
+		if (!supportsBlit)
+		{
+			std::vector<VkFormat> formatsBGR = { VK_FORMAT_B8G8R8A8_SRGB, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_B8G8R8A8_SNORM };
+			colorSwizzle = (std::find(formatsBGR.begin(), formatsBGR.end(), swapChain.colorFormat) != formatsBGR.end());
+		}
+
+		if (colorSwizzle) {
+			for (uint32_t y = 0; y < height; y++)
+			{
+				unsigned int* row = (unsigned int*)data;
+				for (uint32_t x = 0; x < width; x++)
+				{
+					if (colorSwizzle)
+					{
+						uint32_t tmp = row[2];
+						row[2] = row[1];
+						row[1] = tmp;
+					}
+					row++;
+				}
+				data += subResourceLayout.rowPitch;
+			}
+		}
+
+		this->write2JPG(filename, width, height, 4, data, 100);
+
+		/*std::string screenShotSavePath = GetScreenshotPath() + filename;
 		std::ofstream file(filename, std::ios::out | std::ios::binary);
 
 		// ppm header
@@ -538,7 +565,7 @@ public:
 			}
 			data += subResourceLayout.rowPitch;
 		}
-		file.close();
+		file.close();*/
 
 		LOG_INFO("Screenshot saved to disk");
 
@@ -1974,7 +2001,7 @@ public:
 				}
 			}
 			if (ui->button("Take screenshot")) {
-				saveScreenshot("screenshot.ppm");
+				saveScreenshot("screenshot.jpg");
 			}
 			if (screenshotSaved) {
 				ui->text("Screenshot saved as screenshot.ppm");
