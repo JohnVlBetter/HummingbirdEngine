@@ -91,8 +91,14 @@ const std::string GetTexturePath() {
 	return assetpath + "textures/";
 }
 
-const std::string logpath = "../../../log/";
+const std::string logpath = "../../../logs/";
 
 const std::string GetLogPath() {
 	return logpath;
+}
+
+const std::string screenshotPath = "../../../screenshots/";
+
+const std::string GetScreenshotPath() {
+	return screenshotPath;
 }
