@@ -13,6 +13,7 @@
 #include "VulkanglTFModel.h"
 
 #include "UI.hpp"
+#include "Light.hpp"
 #include "FileUtils.hpp"
 
 class ApplicationExample : public ApplicationBase
@@ -52,6 +53,7 @@ public:
 		float scaleIBLAmbient = 1.0f;
 		float debugViewInputs = 0;
 		float debugViewEquation = 0;
+		alignas(16)glm::vec3 lightColor;
 	} shaderValuesParams;
 
 	VkPipelineLayout pipelineLayout;
@@ -92,10 +94,7 @@ public:
 
 	bool displayBackground = true;
 	
-	struct LightSource {
-		glm::vec3 color = glm::vec3(1.0f);
-		glm::vec3 rotation = glm::vec3(75.0f, 40.0f, 0.0f);
-	} lightSource;
+	DirectionalLight *lightSource;
 
 	UI *ui;
 
@@ -1641,10 +1640,11 @@ public:
 	void updateParams()
 	{
 		shaderValuesParams.lightDir = glm::vec4(
-			sin(glm::radians(lightSource.rotation.x)) * cos(glm::radians(lightSource.rotation.y)),
-			sin(glm::radians(lightSource.rotation.y)),
-			cos(glm::radians(lightSource.rotation.x)) * cos(glm::radians(lightSource.rotation.y)),
+			sin(glm::radians(lightSource->rotation.x)) * cos(glm::radians(lightSource->rotation.y)),
+			sin(glm::radians(lightSource->rotation.y)),
+			cos(glm::radians(lightSource->rotation.x)) * cos(glm::radians(lightSource->rotation.y)),
 			0.0f);
+		shaderValuesParams.lightColor = lightSource->color * lightSource->intensity;
 	}
 
 	void windowResized()
@@ -1666,6 +1666,8 @@ public:
 		camera.movementSpeed = 0.1f;
 		camera.setPosition({ 0.0f, 0.0f, 1.0f });
 		camera.setRotation({ 0.0f, 0.0f, 0.0f });
+
+		lightSource = new DirectionalLight();
 
 		waitFences.resize(renderAhead);
 		presentCompleteSemaphores.resize(renderAhead);

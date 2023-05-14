@@ -27,6 +27,7 @@ layout (set = 0, binding = 1) uniform UBOParams {
 	float scaleIBLAmbient;
 	float debugViewInputs;
 	float debugViewEquation;
+	vec3 lightColor;
 } uboParams;
 
 layout (set = 0, binding = 2) uniform samplerCube samplerIrradiance;
@@ -340,13 +341,11 @@ void main()
 	float G = geometricOcclusion(pbrInputs);
 	float D = microfacetDistribution(pbrInputs);
 
-	const vec3 u_LightColor = vec3(1.0);
-
 	// Calculation of analytical lighting contribution
 	vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs);
 	vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);
 	// Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
-	vec3 color = NdotL * u_LightColor * (diffuseContrib + specContrib);
+	vec3 color = NdotL * uboParams.lightColor * (diffuseContrib + specContrib);
 
 	// Calculate lighting contribution from image based lighting source (IBL)
 	color += getIBLContribution(pbrInputs, n, reflection);
