@@ -11,6 +11,7 @@
 
 #include "VulkanTexture.hpp"
 #include "BoundingBox.hpp"
+#include "Transform.hpp"
 #include "Material.hpp"
 #include "Mesh.hpp"
 

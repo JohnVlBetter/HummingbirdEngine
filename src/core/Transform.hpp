@@ -18,10 +18,10 @@ public:
 	}
 
 	Transform(const glm::mat4 mat) : localToWorldMatrix(mat){
-		isDirty = false;
+		isDirty = true;
 	}
 
-	glm::mat4x4 GetLocalToWorldMatrix() {
+	glm::mat4 GetLocalToWorldMatrix() {
 		if (isDirty) {
 			localToWorldMatrix = 
 				glm::translate(glm::mat4(1.0f), position) * 
@@ -42,6 +42,11 @@ public:
 		rotation = glm::angleAxis(_angle, _axis) * rotation;
 		isDirty = true;
 	}
+	
+	void Rotate(const glm::quat& _q) {
+		rotation = rotation * _q;
+		isDirty = true;
+	}
 
 	void Rotate(const glm::vec3& _eulerAngles) {
 		rotation = glm::quat(_eulerAngles) * rotation;
@@ -55,5 +60,5 @@ public:
 
 private:
 	bool isDirty = true;
-	glm::mat4x4 localToWorldMatrix = glm::mat4x4(1.0f);
+	glm::mat4 localToWorldMatrix = glm::mat4(1.0f);
 };

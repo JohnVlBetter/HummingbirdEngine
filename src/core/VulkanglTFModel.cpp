@@ -4,7 +4,8 @@ namespace vkglTF
 {
 	// Node
 	glm::mat4 Node::localMatrix() {
-		return glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * matrix;
+		Transform* t = new Transform(translation, rotation, scale);
+		return t->GetLocalToWorldMatrix();
 	}
 
 	glm::mat4 Node::getMatrix() {
@@ -92,13 +93,15 @@ namespace vkglTF
 		newNode->parent = parent;
 		newNode->name = node.name;
 		newNode->skinIndex = node.skin;
-		newNode->matrix = glm::mat4(1.0f);
+		newNode->matrix = glm::mat4(1.0f); \
+		Transform* t = new Transform();
 
 		// Generate local node matrix
 		glm::vec3 translation = glm::vec3(0.0f);
 		if (node.translation.size() == 3) {
 			translation = glm::make_vec3(node.translation.data());
 			newNode->translation = translation;
+			t->Translate(translation);
 		}
 		glm::mat4 rotation = glm::mat4(1.0f);
 		if (node.rotation.size() == 4) {
@@ -109,6 +112,7 @@ namespace vkglTF
 		if (node.scale.size() == 3) {
 			scale = glm::make_vec3(node.scale.data());
 			newNode->scale = scale;
+			t->Scale(scale);
 		}
 		if (node.matrix.size() == 16) {
 			newNode->matrix = glm::make_mat4x4(node.matrix.data());
@@ -124,7 +128,7 @@ namespace vkglTF
 		// Node contains mesh data
 		if (node.mesh > -1) {
 			const tinygltf::Mesh mesh = model.meshes[node.mesh];
-			Mesh *newMesh = new Mesh(device, newNode->matrix);
+			Mesh *newMesh = new Mesh(device, t->GetLocalToWorldMatrix());
 			for (size_t j = 0; j < mesh.primitives.size(); j++) {
 				const tinygltf::Primitive &primitive = mesh.primitives[j];
 				uint32_t vertexStart = static_cast<uint32_t>(loaderInfo.vertexPos);
