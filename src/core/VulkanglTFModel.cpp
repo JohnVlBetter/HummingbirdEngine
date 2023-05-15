@@ -3,16 +3,11 @@
 namespace vkglTF
 {
 	// Node
-	glm::mat4 Node::localMatrix() {
-		Transform* t = new Transform(translation, rotation, scale);
-		return t->GetLocalToWorldMatrix();
-	}
-
 	glm::mat4 Node::getMatrix() {
-		glm::mat4 m = localMatrix();
+		glm::mat4 m = transform->GetLocalToWorldMatrix();
 		vkglTF::Node *p = parent;
 		while (p) {
-			m = p->localMatrix() * m;
+			m = p->transform->GetLocalToWorldMatrix() * m;
 			p = p->parent;
 		}
 		return m;
@@ -93,29 +88,26 @@ namespace vkglTF
 		newNode->parent = parent;
 		newNode->name = node.name;
 		newNode->skinIndex = node.skin;
-		newNode->matrix = glm::mat4(1.0f); \
-		Transform* t = new Transform();
+		newNode->transform = new Transform();
 
 		// Generate local node matrix
 		glm::vec3 translation = glm::vec3(0.0f);
 		if (node.translation.size() == 3) {
 			translation = glm::make_vec3(node.translation.data());
-			newNode->translation = translation;
-			t->Translate(translation);
+			newNode->transform->Translate(translation);
 		}
 		glm::mat4 rotation = glm::mat4(1.0f);
 		if (node.rotation.size() == 4) {
 			glm::quat q = glm::make_quat(node.rotation.data());
-			newNode->rotation = glm::mat4(q);
+			newNode->transform->Rotate(q);
 		}
 		glm::vec3 scale = glm::vec3(1.0f);
 		if (node.scale.size() == 3) {
 			scale = glm::make_vec3(node.scale.data());
-			newNode->scale = scale;
-			t->Scale(scale);
+			newNode->transform->Scale(scale);
 		}
 		if (node.matrix.size() == 16) {
-			newNode->matrix = glm::make_mat4x4(node.matrix.data());
+			//newNode->matrix = glm::make_mat4x4(node.matrix.data());
 		};
 
 		// Node with children
@@ -128,7 +120,7 @@ namespace vkglTF
 		// Node contains mesh data
 		if (node.mesh > -1) {
 			const tinygltf::Mesh mesh = model.meshes[node.mesh];
-			Mesh *newMesh = new Mesh(device, t->GetLocalToWorldMatrix());
+			Mesh *newMesh = new Mesh(device, newNode->transform->GetLocalToWorldMatrix());
 			for (size_t j = 0; j < mesh.primitives.size(); j++) {
 				const tinygltf::Primitive &primitive = mesh.primitives[j];
 				uint32_t vertexStart = static_cast<uint32_t>(loaderInfo.vertexPos);
@@ -878,12 +870,12 @@ namespace vkglTF
 						switch (channel.path) {
 						case vkglTF::AnimationChannel::PathType::TRANSLATION: {
 							glm::vec4 trans = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
-							channel.node->translation = glm::vec3(trans);
+							channel.node->transform->SetPositon(glm::vec3(trans));
 							break;
 						}
 						case vkglTF::AnimationChannel::PathType::SCALE: {
-							glm::vec4 trans = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
-							channel.node->scale = glm::vec3(trans);
+							glm::vec4 scale = glm::mix(sampler.outputsVec4[i], sampler.outputsVec4[i + 1], u);
+							channel.node->transform->SetScale(glm::vec3(scale));
 							break;
 						}
 						case vkglTF::AnimationChannel::PathType::ROTATION: {
@@ -897,7 +889,7 @@ namespace vkglTF
 							q2.y = sampler.outputsVec4[i + 1].y;
 							q2.z = sampler.outputsVec4[i + 1].z;
 							q2.w = sampler.outputsVec4[i + 1].w;
-							channel.node->rotation = glm::normalize(glm::slerp(q1, q2, u));
+							channel.node->transform->SetRotation(glm::normalize(glm::slerp(q1, q2, u)));
 							break;
 						}
 						}

@@ -5,7 +5,7 @@
 class Transform {
 public:
 	glm::vec3 position = glm::vec3(0.0f);
-	glm::quat rotation = glm::quat();
+	glm::quat rotation = glm::quat(1, 0, 0, 0);
 	glm::vec3 scale = glm::vec3(1.0f);
 
 	Transform(){}
@@ -26,20 +26,19 @@ public:
 			localToWorldMatrix = 
 				glm::translate(glm::mat4(1.0f), position) * 
 				glm::mat4(rotation) * 
-				glm::scale(glm::mat4(1.0f), scale) * 
-				localToWorldMatrix;
+				glm::scale(glm::mat4(1.0f), scale);
 			isDirty = false;
 		}
 		return localToWorldMatrix;
 	}
 
 	void Translate(const glm::vec3& _position) {
-		position = _position;
+		position += _position;
 		isDirty = true;
 	}
 
 	void Rotate(float _angle, const glm::vec3& _axis) {
-		rotation = glm::angleAxis(_angle, _axis) * rotation;
+		rotation = rotation * glm::angleAxis(_angle, _axis);
 		isDirty = true;
 	}
 	
@@ -49,12 +48,26 @@ public:
 	}
 
 	void Rotate(const glm::vec3& _eulerAngles) {
-		rotation = glm::quat(_eulerAngles) * rotation;
+		rotation = rotation * glm::quat(_eulerAngles);
 		isDirty = true;
 	}
 
 	void Scale(const glm::vec3& _scale) {
-		position = _scale;
+		SetScale(_scale);
+	}
+
+	void SetScale(const glm::vec3& _scale) {
+		scale = _scale;
+		isDirty = true;
+	}
+
+	void SetRotation(const glm::quat& _q) {
+		rotation = _q;
+		isDirty = true;
+	}
+
+	void SetPositon(const glm::vec3& _position) {
+		position = _position;
 		isDirty = true;
 	}
 
