@@ -15,6 +15,7 @@
 #include "Camera.hpp"
 #include "Keycodes.hpp"
 #include "Log.hpp"
+#include "Transform.hpp"
 
 #include "VulkanDevice.hpp"
 #include "VulkanSwapChain.hpp"
