@@ -10,9 +10,9 @@ private:
 	void updateViewMatrix()
 	{
 		glm::mat4 rotM = glm::mat4(1.0f);
-		rotM = glm::rotate(rotM, transform->eulerAngle.x, glm::vec3(1.0f, 0.0f, 0.0f));
-		rotM = glm::rotate(rotM, transform->eulerAngle.y, glm::vec3(0.0f, 1.0f, 0.0f));
-		rotM = glm::rotate(rotM, transform->eulerAngle.z, glm::vec3(0.0f, 0.0f, 1.0f));
+		rotM = glm::rotate(rotM, glm::radians(transform->eulerAngle.x), glm::vec3(1.0f, 0.0f, 0.0f));
+		rotM = glm::rotate(rotM, glm::radians(transform->eulerAngle.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		rotM = glm::rotate(rotM, glm::radians(transform->eulerAngle.z), glm::vec3(0.0f, 0.0f, 1.0f));
 		glm::mat4 transM = glm::translate(glm::mat4(1.0f), transform->position * glm::vec3(1.0f, 1.0f, -1.0f));
 
 		if (type == CameraType::firstperson) matrices.view = rotM * transM;
@@ -121,13 +121,13 @@ public:
 				float moveSpeed = deltaTime * movementSpeed;
 
 				if (keys.up)
-					transform->Translate(camFront * moveSpeed);
+					this->transform->Translate(camFront * moveSpeed);
 				if (keys.down)
-					transform->Translate(-camFront * moveSpeed);
+					this->transform->Translate(-camFront * moveSpeed);
 				if (keys.left)
-					transform->Translate(-glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed);
+					this->transform->Translate(-glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed);
 				if (keys.right)
-					transform->Translate(glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed);
+					this->transform->Translate(glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed);
 
 				updateViewMatrix();
 			}
@@ -161,13 +161,13 @@ public:
 			if (fabsf(axisLeft.y) > deadZone)
 			{
 				float pos = (fabsf(axisLeft.y) - deadZone) / range;
-				transform->Translate(-camFront * pos * ((axisLeft.y < 0.0f) ? -1.0f : 1.0f) * moveSpeed);
+				this->transform->Translate(-camFront * pos * ((axisLeft.y < 0.0f) ? -1.0f : 1.0f) * moveSpeed);
 				retVal = true;
 			}
 			if (fabsf(axisLeft.x) > deadZone)
 			{
 				float pos = (fabsf(axisLeft.x) - deadZone) / range;
-				transform->Translate(glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * pos * ((axisLeft.x < 0.0f) ? -1.0f : 1.0f) * moveSpeed);
+				this->transform->Translate(glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * pos * ((axisLeft.x < 0.0f) ? -1.0f : 1.0f) * moveSpeed);
 				retVal = true;
 			}
 
@@ -175,7 +175,7 @@ public:
 			if (fabsf(axisRight.x) > deadZone)
 			{
 				float pos = (fabsf(axisRight.x) - deadZone) / range;
-				transform->Rotate(pos * ((axisRight.x < 0.0f) ? -1.0f : 1.0f) * rotSpeed, glm::vec3(0,1,0));
+				transform->Rotate(pos * ((axisRight.x < 0.0f) ? -1.0f : 1.0f) * rotSpeed, glm::vec3(0, 1, 0));
 				retVal = true;
 			}
 			if (fabsf(axisRight.y) > deadZone)

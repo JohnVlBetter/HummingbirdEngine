@@ -40,19 +40,19 @@ public:
 
 	void Rotate(float _angle, const glm::vec3& _axis) {
 		rotation = rotation * glm::angleAxis(_angle, _axis);
-		eulerAngle = glm::eulerAngles(rotation);
+		eulerAngle = glm::degrees(glm::eulerAngles(rotation));
 		isDirty = true;
 	}
 	
 	void Rotate(const glm::quat& _q) {
 		rotation = rotation * _q;
-		eulerAngle = glm::eulerAngles(rotation);
+		eulerAngle = glm::degrees(glm::eulerAngles(rotation));
 		isDirty = true;
 	}
 
 	void Rotate(const glm::vec3& _eulerAngles) {
-		rotation = rotation * glm::quat(_eulerAngles);
-		eulerAngle = glm::eulerAngles(rotation);
+		rotation = rotation * glm::quat(glm::radians(_eulerAngles));
+		eulerAngle += _eulerAngles;
 		isDirty = true;
 	}
 
@@ -67,7 +67,7 @@ public:
 
 	void SetRotation(const glm::quat& _q) {
 		rotation = _q;
-		eulerAngle = glm::eulerAngles(rotation);
+		eulerAngle = glm::degrees(glm::eulerAngles(rotation));
 		isDirty = true;
 	}
 

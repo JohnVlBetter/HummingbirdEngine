@@ -98,7 +98,7 @@ public:
 
 	UI *ui;
 
-	bool rotateModel = true;
+	bool rotateModel = false;
 
 	enum PBRWorkflows{ PBR_WORKFLOW_METALLIC_ROUGHNESS = 0, PBR_WORKFLOW_SPECULAR_GLOSINESS = 1 };
 
@@ -1636,9 +1636,9 @@ public:
 	void updateParams()
 	{
 		shaderValuesParams.lightDir = glm::vec4(
-			sin(glm::radians(lightSource->rotation.x)) * cos(glm::radians(lightSource->rotation.y)),
-			sin(glm::radians(lightSource->rotation.y)),
-			cos(glm::radians(lightSource->rotation.x)) * cos(glm::radians(lightSource->rotation.y)),
+			sin(glm::radians(lightSource->transform->eulerAngle.x)) * cos(glm::radians(lightSource->transform->eulerAngle.y)),
+			sin(glm::radians(lightSource->transform->eulerAngle.y)),
+			cos(glm::radians(lightSource->transform->eulerAngle.x)) * cos(glm::radians(lightSource->transform->eulerAngle.y)),
 			0.0f);
 		shaderValuesParams.lightColor = lightSource->color * lightSource->intensity;
 	}
@@ -1656,7 +1656,7 @@ public:
 		ApplicationBase::prepare();
 
 		camera = std::make_shared<Camera>();
-		camera->type = Camera::CameraType::firstperson;
+		camera->type = Camera::CameraType::lookat;
 
 		camera->setPerspective(45.0f, (float)width / (float)height, 0.1f, 256.0f);
 		camera->rotationSpeed = 0.25f;
@@ -1929,7 +1929,7 @@ public:
 
 		if (!paused) {
 			if (rotateModel) {
-				models.scene.transform->Rotate(glm::vec3(0, frameTimer, 0));
+				models.scene.transform->Rotate(glm::vec3(0, frameTimer * 30.0f, 0));
 			}
 			if ((animate) && (models.scene.animations.size() > 0)) {
 				animationTimer += frameTimer;
