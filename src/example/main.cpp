@@ -98,9 +98,7 @@ public:
 
 	UI *ui;
 
-	bool rotateModel = false;
-	glm::vec3 modelrot = glm::vec3(0.0f);
-	glm::vec3 modelPos = glm::vec3(0.0f);
+	bool rotateModel = true;
 
 	enum PBRWorkflows{ PBR_WORKFLOW_METALLIC_ROUGHNESS = 0, PBR_WORKFLOW_SPECULAR_GLOSINESS = 1 };
 
@@ -1619,11 +1617,9 @@ public:
 		glm::vec3 translate = -glm::vec3(models.scene.aabb[3][0], models.scene.aabb[3][1], models.scene.aabb[3][2]);
 		translate += -0.5f * glm::vec3(models.scene.aabb[0][0], models.scene.aabb[1][1], models.scene.aabb[2][2]);
 
-		shaderValuesScene.model = glm::mat4(1.0f);
-		shaderValuesScene.model[0][0] = scale;
-		shaderValuesScene.model[1][1] = scale;
-		shaderValuesScene.model[2][2] = scale;
-		shaderValuesScene.model = glm::translate(shaderValuesScene.model, translate);
+		models.scene.transform->SetPositon(translate);
+		models.scene.transform->SetScale(glm::vec3(scale));
+		shaderValuesScene.model = models.scene.transform->GetLocalToWorldMatrix();
 
 		shaderValuesScene.camPos = glm::vec3(
 			-camera.position.z * sin(glm::radians(camera.rotation.y)) * cos(glm::radians(camera.rotation.x)),
@@ -1932,10 +1928,7 @@ public:
 
 		if (!paused) {
 			if (rotateModel) {
-				modelrot.y += frameTimer * 35.0f;
-				if (modelrot.y > 360.0f) {
-					modelrot.y -= 360.0f;
-				}
+				models.scene.transform->Rotate(glm::vec3(0, frameTimer, 0));
 			}
 			if ((animate) && (models.scene.animations.size() > 0)) {
 				animationTimer += frameTimer;

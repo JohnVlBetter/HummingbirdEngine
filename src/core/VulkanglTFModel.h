@@ -30,7 +30,7 @@ namespace vkglTF
 		Node *parent;
 		uint32_t index;
 		std::vector<Node*> children;
-		Transform *transform;
+		std::shared_ptr<Transform> transform;
 		std::string name;
 		Mesh *mesh;
 		Skin *skin;
@@ -93,6 +93,7 @@ namespace vkglTF
 		std::vector<Node*> linearNodes;
 
 		std::vector<Skin*> skins;
+		std::shared_ptr<Transform> transform;
 
 		std::vector<hbvk::Texture2D> textures;
 		std::vector<hbvk::TextureSampler> textureSamplers;

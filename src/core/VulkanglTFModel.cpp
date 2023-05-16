@@ -88,7 +88,7 @@ namespace vkglTF
 		newNode->parent = parent;
 		newNode->name = node.name;
 		newNode->skinIndex = node.skin;
-		newNode->transform = new Transform();
+		newNode->transform = std::make_shared<Transform>();
 
 		// Generate local node matrix
 		glm::vec3 translation = glm::vec3(0.0f);
@@ -644,6 +644,7 @@ namespace vkglTF
 		std::string warning;
 
 		this->device = device;
+		transform = std::make_shared<Transform>();
 
 		bool binary = false;
 		size_t extpos = filename.rfind('.', filename.length());
