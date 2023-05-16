@@ -343,8 +343,8 @@ public:
 		models.scene.loadFromFile(filename, vulkanDevice, queue);
 		auto tFileLoad = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - tStart).count();
 		LOG_INFO("Loading took {} ms", tFileLoad);
-		camera.setPosition({ 0.0f, 0.0f, 1.0f });
-		camera.setRotation({ 0.0f, 0.0f, 0.0f });
+		camera->setPosition({ 0.0f, 0.0f, 1.0f });
+		camera->setRotation({ 0.0f, 0.0f, 0.0f });
 	}
 
 	void loadEnvironment(std::string filename)
@@ -1609,8 +1609,8 @@ public:
 	void updateUniformBuffers()
 	{
 		// Scene
-		shaderValuesScene.projection = camera.matrices.perspective;
-		shaderValuesScene.view = camera.matrices.view;
+		shaderValuesScene.projection = camera->matrices.perspective;
+		shaderValuesScene.view = camera->matrices.view;
 		
 		// Center and scale model
 		float scale = (1.0f / std::max(models.scene.aabb[0][0], std::max(models.scene.aabb[1][1], models.scene.aabb[2][2]))) * 0.5f;
@@ -1622,15 +1622,15 @@ public:
 		shaderValuesScene.model = models.scene.transform->GetLocalToWorldMatrix();
 
 		shaderValuesScene.camPos = glm::vec3(
-			-camera.position.z * sin(glm::radians(camera.rotation.y)) * cos(glm::radians(camera.rotation.x)),
-			-camera.position.z * sin(glm::radians(camera.rotation.x)),
-			 camera.position.z * cos(glm::radians(camera.rotation.y)) * cos(glm::radians(camera.rotation.x))
+			-camera->transform->position.z * sin(glm::radians(camera->transform->eulerAngle.y)) * cos(glm::radians(camera->transform->eulerAngle.x)),
+			-camera->transform->position.z * sin(glm::radians(camera->transform->eulerAngle.x)),
+			 camera->transform->position.z * cos(glm::radians(camera->transform->eulerAngle.y)) * cos(glm::radians(camera->transform->eulerAngle.x))
 		);
 
 		// Skybox
-		shaderValuesSkybox.projection = camera.matrices.perspective;
-		shaderValuesSkybox.view = camera.matrices.view;
-		shaderValuesSkybox.model = glm::mat4(glm::mat3(camera.matrices.view));
+		shaderValuesSkybox.projection = camera->matrices.perspective;
+		shaderValuesSkybox.view = camera->matrices.view;
+		shaderValuesSkybox.model = glm::mat4(glm::mat3(camera->matrices.view));
 	}
 
 	void updateParams()
@@ -1655,13 +1655,14 @@ public:
 	{
 		ApplicationBase::prepare();
 
-		camera.type = Camera::CameraType::lookat;
+		camera = std::make_shared<Camera>();
+		camera->type = Camera::CameraType::firstperson;
 
-		camera.setPerspective(45.0f, (float)width / (float)height, 0.1f, 256.0f);
-		camera.rotationSpeed = 0.25f;
-		camera.movementSpeed = 0.1f;
-		camera.setPosition({ 0.0f, 0.0f, 1.0f });
-		camera.setRotation({ 0.0f, 0.0f, 0.0f });
+		camera->setPerspective(45.0f, (float)width / (float)height, 0.1f, 256.0f);
+		camera->rotationSpeed = 0.25f;
+		camera->movementSpeed = 0.1f;
+		camera->setPosition({ 0.0f, 0.0f, 1.0f });
+		camera->setRotation({ 0.0f, 0.0f, 0.0f });
 
 		lightSource = new DirectionalLight();
 
@@ -1942,7 +1943,7 @@ public:
 				updateUniformBuffers();
 			}
 		}
-		if (camera.updated) {
+		if (camera->updated) {
 			updateUniformBuffers();
 		}
 	}

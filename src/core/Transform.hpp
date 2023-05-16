@@ -7,12 +7,13 @@ public:
 	glm::vec3 position = glm::vec3(0.0f);
 	glm::quat rotation = glm::quat(1, 0, 0, 0);
 	glm::vec3 scale = glm::vec3(1.0f);
+	glm::vec3 eulerAngle = glm::vec3(1.0f);
 
 	Transform(){}
 	~Transform() {}
 
 	Transform(const glm::vec3& _position, const glm::quat& _rotation, const glm::vec3& _scale)
-		:position(_position),rotation(_rotation),scale(_scale)
+		:position(_position),rotation(_rotation),scale(_scale),eulerAngle(glm::eulerAngles(_rotation))
 	{
 		isDirty = true;
 	}
@@ -39,16 +40,19 @@ public:
 
 	void Rotate(float _angle, const glm::vec3& _axis) {
 		rotation = rotation * glm::angleAxis(_angle, _axis);
+		eulerAngle = glm::eulerAngles(rotation);
 		isDirty = true;
 	}
 	
 	void Rotate(const glm::quat& _q) {
 		rotation = rotation * _q;
+		eulerAngle = glm::eulerAngles(rotation);
 		isDirty = true;
 	}
 
 	void Rotate(const glm::vec3& _eulerAngles) {
 		rotation = rotation * glm::quat(_eulerAngles);
+		eulerAngle = glm::eulerAngles(rotation);
 		isDirty = true;
 	}
 
@@ -63,6 +67,13 @@ public:
 
 	void SetRotation(const glm::quat& _q) {
 		rotation = _q;
+		eulerAngle = glm::eulerAngles(rotation);
+		isDirty = true;
+	}
+
+	void SetRotation(const glm::vec3& _e) {
+		rotation = glm::quat(_e);
+		eulerAngle = _e;
 		isDirty = true;
 	}
 

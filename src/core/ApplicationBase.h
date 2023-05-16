@@ -75,7 +75,7 @@ public:
 	uint32_t height = 1080; 
 	std::string iconPath;
 	float frameTimer = 1.0f;
-	Camera camera;
+	std::shared_ptr<Camera> camera;
 	glm::vec2 mousePos;
 	bool paused = false;
 	uint32_t lastFPS = 0;

@@ -277,7 +277,7 @@ void ApplicationBase::renderFrame()
 	auto tEnd = std::chrono::high_resolution_clock::now();
 	auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
 	frameTimer = (float)tDiff / 1000.0f;
-	camera.update(frameTimer);
+	camera->update(frameTimer);
 	fpsTimer += (float)tDiff;
 	if (fpsTimer > 1000.0f) {
 		lastFPS = static_cast<uint32_t>((float)frameCounter * (1000.0f / fpsTimer));
@@ -743,19 +743,19 @@ void ApplicationBase::saveScreenshot(std::string filename)
 }
 
 void ApplicationBase::processInput() {
-	if (camera.firstperson)
+	if (camera->firstperson)
 	{
 		if (checkKeyPress(glfwWindow, KEY_W)) {
-			camera.keys.up = true;
+			camera->keys.up = true;
 		}
 		if (checkKeyPress(glfwWindow, KEY_S)) {
-			camera.keys.down = true;
+			camera->keys.down = true;
 		}
 		if (checkKeyPress(glfwWindow, KEY_A)) {
-			camera.keys.left = true;
+			camera->keys.left = true;
 		}
 		if (checkKeyPress(glfwWindow, KEY_D)) {
-			camera.keys.right = true;
+			camera->keys.right = true;
 		}
 	}
 
@@ -1006,7 +1006,7 @@ void ApplicationBase::windowResize()
 	setupFrameBuffer();
 	vkDeviceWaitIdle(device);
 
-	camera.updateAspectRatio((float)width / (float)height);
+	camera->updateAspectRatio((float)width / (float)height);
 	windowResized();
 
 	prepared = true;
@@ -1014,7 +1014,7 @@ void ApplicationBase::windowResize()
 
 void ApplicationBase::handleMouseScroll(float delta)
 {
-	camera.translate(glm::vec3(0.0f, 0.0f, -delta * 0.2f * camera.movementSpeed));
+	camera->translate(glm::vec3(0.0f, 0.0f, -delta * 0.2f * camera->movementSpeed));
 }
 
 void ApplicationBase::handleDropFile(int count, const char** paths)
@@ -1038,13 +1038,13 @@ void ApplicationBase::handleMouseMove(float x, float y)
 	}
 
 	if (mouseButtons.left) {
-		camera.rotate(glm::vec3(dy * camera.rotationSpeed, -dx * camera.rotationSpeed, 0.0f));
+		camera->rotate(glm::vec3(dy * camera->rotationSpeed, -dx * camera->rotationSpeed, 0.0f));
 	}
 	if (mouseButtons.right) {
-		camera.translate(glm::vec3(-0.0f, 0.0f, dy * .005f * camera.movementSpeed));
+		camera->translate(glm::vec3(-0.0f, 0.0f, dy * .005f * camera->movementSpeed));
 	}
 	if (mouseButtons.middle) {
-		camera.translate(glm::vec3(-dx * 0.01f, -dy * 0.01f, 0.0f));
+		camera->translate(glm::vec3(-dx * 0.01f, -dy * 0.01f, 0.0f));
 	}
 	mousePos = glm::vec2(x, y);
 }
