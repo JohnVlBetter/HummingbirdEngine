@@ -14,6 +14,13 @@
 #include <gli/gli.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <map>
+
 //#define TINYGLTF_NO_STB_IMAGE_WRITE
 #include "tiny_gltf.h"
 
