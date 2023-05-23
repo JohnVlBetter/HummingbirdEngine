@@ -5,8 +5,8 @@
 
 class Light {
 public:
-	glm::vec3 color = glm::vec3(1.0f,1.0f,0.0f);
-	float intensity = 10.0f;
+	glm::vec3 color = glm::vec3(1.0f,1.0f,1.0f);
+	float intensity = 1.0f;
 	std::shared_ptr<Transform> transform;
 
 	Light() {

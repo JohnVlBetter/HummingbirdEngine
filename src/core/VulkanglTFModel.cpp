@@ -777,10 +777,115 @@ namespace vkglTF
 		getSceneDimensions();
 	}
 
-	void Model::drawNode(Node *node, VkCommandBuffer commandBuffer)
+	void Model::renderNodePBR(const VkPipeline& pbr, const VkPipeline& pbrDoubleSided,
+		const VkPipeline& pbrAlphaBlend, const VkCommandBuffer& commandBuffer,
+		const VkDescriptorSet& descriptorSet, const VkPipelineLayout& pipelineLayout,
+		vkglTF::Node* node, Material::AlphaMode alphaMode)
 	{
 		if (node->mesh) {
-			for (Primitive *primitive : node->mesh->primitives) {
+			// Render mesh primitives
+			for (Primitive* primitive : node->mesh->primitives) {
+				if (primitive->material.alphaMode == alphaMode) {
+
+					VkPipeline pipeline = VK_NULL_HANDLE;
+					switch (alphaMode) {
+					case Material::ALPHAMODE_OPAQUE:
+					case Material::ALPHAMODE_MASK:
+						pipeline = primitive->material.doubleSided ? pbrDoubleSided : pbr;
+						break;
+					case Material::ALPHAMODE_BLEND:
+						pipeline = pbrAlphaBlend;
+						break;
+					}
+
+					if (pipeline != boundPipeline) {
+						vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+						boundPipeline = pipeline;
+					}
+
+					const std::vector<VkDescriptorSet> descriptorsets = {
+						descriptorSet,
+						primitive->material.descriptorSet,
+						node->mesh->uniformBuffer.descriptorSet,
+					};
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
+
+					// Pass material parameters as push constants
+					PushConstBlockMaterial pushConstBlockMaterial{};
+					pushConstBlockMaterial.emissiveFactor = primitive->material.emissiveFactor;
+					// To save push constant space, availabilty and texture coordiante set are combined
+					// -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
+					pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
+					pushConstBlockMaterial.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
+					pushConstBlockMaterial.occlusionTextureSet = primitive->material.occlusionTexture != nullptr ? primitive->material.texCoordSets.occlusion : -1;
+					pushConstBlockMaterial.emissiveTextureSet = primitive->material.emissiveTexture != nullptr ? primitive->material.texCoordSets.emissive : -1;
+					pushConstBlockMaterial.alphaMask = static_cast<float>(primitive->material.alphaMode == Material::ALPHAMODE_MASK);
+					pushConstBlockMaterial.alphaMaskCutoff = primitive->material.alphaCutoff;
+
+					// TODO: glTF specs states that metallic roughness should be preferred, even if specular glosiness is present
+
+					if (primitive->material.pbrWorkflows.metallicRoughness) {
+						// Metallic roughness workflow
+						pushConstBlockMaterial.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
+						pushConstBlockMaterial.baseColorFactor = primitive->material.baseColorFactor;
+						pushConstBlockMaterial.metallicFactor = primitive->material.metallicFactor;
+						pushConstBlockMaterial.roughnessFactor = primitive->material.roughnessFactor;
+						pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.metallicRoughnessTexture != nullptr ? primitive->material.texCoordSets.metallicRoughness : -1;
+						pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
+					}
+
+					if (primitive->material.pbrWorkflows.specularGlossiness) {
+						// Specular glossiness workflow
+						pushConstBlockMaterial.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSINESS);
+						pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.extension.specularGlossinessTexture != nullptr ? primitive->material.texCoordSets.specularGlossiness : -1;
+						pushConstBlockMaterial.colorTextureSet = primitive->material.extension.diffuseTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
+						pushConstBlockMaterial.diffuseFactor = primitive->material.extension.diffuseFactor;
+						pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
+					}
+
+					vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstBlockMaterial), &pushConstBlockMaterial);
+
+					if (primitive->hasIndices) {
+						vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+					}
+					else {
+						vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
+					}
+				}
+			}
+
+		};
+
+		for (auto child : node->children) {
+			renderNodePBR(pbr, pbrDoubleSided, pbrAlphaBlend, commandBuffer, descriptorSet, pipelineLayout, child, alphaMode);
+		}
+	}
+
+	void Model::renderPBR(const VkPipeline& pbr, const VkPipeline& pbrDoubleSided,
+		const VkPipeline& pbrAlphaBlend, const VkCommandBuffer& commandBuffer,
+		const VkDescriptorSet& descriptorSet, const VkPipelineLayout& pipelineLayout) {
+
+		boundPipeline = VK_NULL_HANDLE;
+
+		// Opaque primitives first
+		for (auto node : nodes) {
+			renderNodePBR(pbr, pbrDoubleSided, pbrAlphaBlend, commandBuffer, descriptorSet, pipelineLayout, node, Material::ALPHAMODE_OPAQUE);
+		}
+		// Alpha masked primitives
+		for (auto node : nodes) {
+			renderNodePBR(pbr, pbrDoubleSided, pbrAlphaBlend, commandBuffer, descriptorSet, pipelineLayout, node, Material::ALPHAMODE_MASK);
+		}
+		// Transparent primitives
+		// TODO: Correct depth sorting
+		for (auto node : nodes) {
+			renderNodePBR(pbr, pbrDoubleSided, pbrAlphaBlend, commandBuffer, descriptorSet, pipelineLayout, node, Material::ALPHAMODE_BLEND);
+		}
+	}
+
+	void Model::drawNode(Node* node, VkCommandBuffer commandBuffer)
+	{
+		if (node->mesh) {
+			for (Primitive* primitive : node->mesh->primitives) {
 				vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
 			}
 		}

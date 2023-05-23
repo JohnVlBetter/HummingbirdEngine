@@ -64,6 +64,8 @@ namespace vkglTF
 		float end = std::numeric_limits<float>::min();
 	};
 
+	enum PBRWorkflows { PBR_WORKFLOW_METALLIC_ROUGHNESS = 0, PBR_WORKFLOW_SPECULAR_GLOSINESS = 1 };
+
 	struct Model {
 
 		hbvk::VulkanDevice *device;
@@ -77,6 +79,23 @@ namespace vkglTF
 			glm::vec4 weight0;
 			glm::vec4 color;
 		};
+
+		struct PushConstBlockMaterial {
+			glm::vec4 baseColorFactor;
+			glm::vec4 emissiveFactor;
+			glm::vec4 diffuseFactor;
+			glm::vec4 specularFactor;
+			float workflow;
+			int colorTextureSet;
+			int PhysicalDescriptorTextureSet;
+			int normalTextureSet;
+			int occlusionTextureSet;
+			int emissiveTextureSet;
+			float metallicFactor;
+			float roughnessFactor;
+			float alphaMask;
+			float alphaMaskCutoff;
+		} pushConstBlockMaterial;
 
 		struct Vertices {
 			VkBuffer buffer = VK_NULL_HANDLE;
@@ -101,6 +120,8 @@ namespace vkglTF
 		std::vector<Animation> animations;
 		std::vector<std::string> extensions;
 
+		VkPipeline boundPipeline = VK_NULL_HANDLE;
+
 		struct Dimensions {
 			glm::vec3 min = glm::vec3(FLT_MAX);
 			glm::vec3 max = glm::vec3(-FLT_MAX);
@@ -124,10 +145,17 @@ namespace vkglTF
 		void loadMaterials(tinygltf::Model& gltfModel);
 		void loadAnimations(tinygltf::Model& gltfModel);
 		void loadFromFile(std::string filename, hbvk::VulkanDevice* device, VkQueue transferQueue, float scale = 1.0f);
-		void drawNode(Node* node, VkCommandBuffer commandBuffer);
-		void draw(VkCommandBuffer commandBuffer);
+		void renderNodePBR(const VkPipeline& pbr, const VkPipeline& pbrDoubleSided,
+			const VkPipeline& pbrAlphaBlend, const VkCommandBuffer& commandBuffer,
+			const VkDescriptorSet& scene, const VkPipelineLayout& pipelineLayout,
+			vkglTF::Node* node, Material::AlphaMode alphaMode);
 		void calculateBoundingBox(Node* node, Node* parent);
 		void getSceneDimensions();
+		void renderPBR(const VkPipeline& pbr, const VkPipeline& pbrDoubleSided,
+			const VkPipeline& pbrAlphaBlend, const VkCommandBuffer& commandBuffer,
+			const VkDescriptorSet& scene, const VkPipelineLayout& pipelineLayout);
+		void drawNode(Node* node, VkCommandBuffer commandBuffer);
+		void draw(VkCommandBuffer commandBuffer);
 		void updateAnimation(uint32_t index, float time);
 		Node* findNode(Node* parent, uint32_t index);
 		Node* nodeFromIndex(uint32_t index);

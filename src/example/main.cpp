@@ -54,7 +54,6 @@ public:
 		VkPipeline pbrDoubleSided;
 		VkPipeline pbrAlphaBlend;
 	} pipelines;
-	VkPipeline boundPipeline = VK_NULL_HANDLE;
 
 	struct DescriptorSetLayouts {
 		VkDescriptorSetLayout scene;
@@ -89,25 +88,6 @@ public:
 	UI *ui;
 
 	bool rotateModel = false;
-
-	enum PBRWorkflows{ PBR_WORKFLOW_METALLIC_ROUGHNESS = 0, PBR_WORKFLOW_SPECULAR_GLOSINESS = 1 };
-
-	struct PushConstBlockMaterial {
-		glm::vec4 baseColorFactor;
-		glm::vec4 emissiveFactor;
-		glm::vec4 diffuseFactor;
-		glm::vec4 specularFactor;
-		float workflow;
-		int colorTextureSet;
-		int PhysicalDescriptorTextureSet;
-		int normalTextureSet;
-		int occlusionTextureSet;
-		int emissiveTextureSet;
-		float metallicFactor;
-		float roughnessFactor;
-		float alphaMask;
-		float alphaMaskCutoff;
-	} pushConstBlockMaterial;
 
 	std::map<std::string, std::string> environments;
 	std::string selectedEnvironment = "papermill";
@@ -159,84 +139,6 @@ public:
 		textures.empty.destroy();
 
 		delete ui;
-	}
-
-	void renderNode(vkglTF::Node *node, uint32_t cbIndex, Material::AlphaMode alphaMode) {
-		if (node->mesh) {
-			// Render mesh primitives
-			for (Primitive * primitive : node->mesh->primitives) {
-				if (primitive->material.alphaMode == alphaMode) {
-
-					VkPipeline pipeline = VK_NULL_HANDLE;
-					switch (alphaMode) {
-					case Material::ALPHAMODE_OPAQUE:
-					case Material::ALPHAMODE_MASK:
-						pipeline = primitive->material.doubleSided ? pipelines.pbrDoubleSided : pipelines.pbr;
-						break;
-					case Material::ALPHAMODE_BLEND:
-						pipeline = pipelines.pbrAlphaBlend;
-						break;
-					}
-
-					if (pipeline != boundPipeline) {
-						vkCmdBindPipeline(commandBuffers[cbIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-						boundPipeline = pipeline;
-					}
-
-					const std::vector<VkDescriptorSet> descriptorsets = {
-						descriptorSets[cbIndex].scene,
-						primitive->material.descriptorSet,
-						node->mesh->uniformBuffer.descriptorSet,
-					};
-					vkCmdBindDescriptorSets(commandBuffers[cbIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
-
-					// Pass material parameters as push constants
-					PushConstBlockMaterial pushConstBlockMaterial{};					
-					pushConstBlockMaterial.emissiveFactor = primitive->material.emissiveFactor;
-					// To save push constant space, availabilty and texture coordiante set are combined
-					// -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
-					pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-					pushConstBlockMaterial.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
-					pushConstBlockMaterial.occlusionTextureSet = primitive->material.occlusionTexture != nullptr ? primitive->material.texCoordSets.occlusion : -1;
-					pushConstBlockMaterial.emissiveTextureSet = primitive->material.emissiveTexture != nullptr ? primitive->material.texCoordSets.emissive : -1;
-					pushConstBlockMaterial.alphaMask = static_cast<float>(primitive->material.alphaMode == Material::ALPHAMODE_MASK);
-					pushConstBlockMaterial.alphaMaskCutoff = primitive->material.alphaCutoff;
-
-					// TODO: glTF specs states that metallic roughness should be preferred, even if specular glosiness is present
-
-					if (primitive->material.pbrWorkflows.metallicRoughness) {
-						// Metallic roughness workflow
-						pushConstBlockMaterial.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
-						pushConstBlockMaterial.baseColorFactor = primitive->material.baseColorFactor;
-						pushConstBlockMaterial.metallicFactor = primitive->material.metallicFactor;
-						pushConstBlockMaterial.roughnessFactor = primitive->material.roughnessFactor;
-						pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.metallicRoughnessTexture != nullptr ? primitive->material.texCoordSets.metallicRoughness : -1;
-						pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-					}
-
-					if (primitive->material.pbrWorkflows.specularGlossiness) {
-						// Specular glossiness workflow
-						pushConstBlockMaterial.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSINESS);
-						pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.extension.specularGlossinessTexture != nullptr ? primitive->material.texCoordSets.specularGlossiness : -1;
-						pushConstBlockMaterial.colorTextureSet = primitive->material.extension.diffuseTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-						pushConstBlockMaterial.diffuseFactor = primitive->material.extension.diffuseFactor;
-						pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
-					}
-
-					vkCmdPushConstants(commandBuffers[cbIndex], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstBlockMaterial), &pushConstBlockMaterial);
-
-					if (primitive->hasIndices) {
-						vkCmdDrawIndexed(commandBuffers[cbIndex], primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-					} else {
-						vkCmdDraw(commandBuffers[cbIndex], primitive->vertexCount, 1, 0, 0);
-					}
-				}
-			}
-
-		};
-		for (auto child : node->children) {
-			renderNode(child, cbIndex, alphaMode);
-		}
 	}
 
 	void recordCommandBuffers()
@@ -299,21 +201,8 @@ public:
 				vkCmdBindIndexBuffer(currentCB, model.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 			}
 
-			boundPipeline = VK_NULL_HANDLE;
-
-			// Opaque primitives first
-			for (auto node : model.nodes) {
-				renderNode(node, i, Material::ALPHAMODE_OPAQUE);
-			}
-			// Alpha masked primitives
-			for (auto node : model.nodes) {
-				renderNode(node, i, Material::ALPHAMODE_MASK);
-			}
-			// Transparent primitives
-			// TODO: Correct depth sorting
-			for (auto node : model.nodes) {
-				renderNode(node, i, Material::ALPHAMODE_BLEND);
-			}
+			model.renderPBR(pipelines.pbr, pipelines.pbrDoubleSided, pipelines.pbrAlphaBlend,
+				currentCB, descriptorSets[i].scene, pipelineLayout);
 
 			// User interface
 			ui->draw(currentCB);
@@ -366,7 +255,7 @@ public:
 
 		textures.empty.loadFromFile(GetTexturePath() + "empty.ktx", VK_FORMAT_R8G8B8A8_UNORM, vulkanDevice, queue);
 
-		std::string sceneFile = GetModelPath() + "DamagedHelmet/glTF/DamagedHelmet.gltf";
+		std::string sceneFile = GetModelPath() + "BoomBox/glTF/BoomBox.gltf";
 		std::string envMapFile = GetEnvironmentPath() + "papermill.ktx";
 
 		loadScene(sceneFile.c_str());
@@ -684,7 +573,7 @@ public:
 		pipelineLayoutCI.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
 		pipelineLayoutCI.pSetLayouts = setLayouts.data();
 		VkPushConstantRange pushConstantRange{};
-		pushConstantRange.size = sizeof(PushConstBlockMaterial);
+		pushConstantRange.size = sizeof(vkglTF::Model::PushConstBlockMaterial);
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		pipelineLayoutCI.pushConstantRangeCount = 1;
 		pipelineLayoutCI.pPushConstantRanges = &pushConstantRange;
@@ -928,7 +817,7 @@ public:
 			if (ui->button("Open gltf file")) {
 
 				char const* lFilterPatterns[2] = { "*.gltf", "*.glb" };
-				std::string defaultPath = GetModelPath() +"DamagedHelmet/glTF/DamagedHelmet.gltf";
+				std::string defaultPath = GetModelPath() +"BoomBox/glTF/BoomBox.gltf";
 				std::string fileName;
 				if (OpenFileDialog(fileName, "Select a glTF file to load", defaultPath.c_str(), lFilterPatterns, 2, "gltf files")) {
 					vkDeviceWaitIdle(device);
