@@ -3,19 +3,12 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <iostream>
-#include <chrono>
-
-#include <string>
-#include <sstream>
-#include <array>
-#include <numeric>
-
 #include "Macros.h"
 #include "Camera.hpp"
 #include "Keycodes.hpp"
 #include "Log.hpp"
 #include "Transform.hpp"
+#include "FPSTimer.hpp"
 
 #include "VulkanDevice.hpp"
 #include "VulkanSwapChain.hpp"
@@ -24,9 +17,7 @@
 
 class ApplicationBase
 {
-private:	
-	float fpsTimer = 0.0f;
-	uint32_t frameCounter = 0;
+private:
 	bool resizing = false;
 
 	PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallback;
@@ -63,22 +54,21 @@ protected:
 	VkDescriptorPool descriptorPool;
 	VkPipelineCache pipelineCache;
 	VulkanSwapChain swapChain;
+	
+public:
+	std::shared_ptr<FPSTimer> fpsTimer;
+	std::shared_ptr<Camera> camera;
 
+	bool prepared = false;
+	bool paused = false;
 	bool screenshotSaved = false;
 
 	std::string title = "Hummingbird Engine";
 	std::string name = "Hummingbird Engine";
-public: 
-	static std::vector<const char*> args;
-	bool prepared = false;
 	uint32_t width = 1920;
 	uint32_t height = 1080; 
-	std::string iconPath;
-	float frameTimer = 1.0f;
-	std::shared_ptr<Camera> camera;
 	glm::vec2 mousePos;
-	bool paused = false;
-	uint32_t lastFPS = 0;
+	std::string iconPath;
 
 	struct Settings {
 		bool validation = false;
@@ -94,11 +84,6 @@ public:
 		VkImageView view;
 	} depthStencil;
 
-	struct GamePadState {
-		glm::vec2 axisLeft = glm::vec2(0.0f);
-		glm::vec2 axisRight = glm::vec2(0.0f);
-	} gamePadState;
-
 	struct MouseButtons {
 		bool left = false;
 		bool right = false;
@@ -108,18 +93,20 @@ public:
 	void handleMouseMove(float x, float y);
 	void handleMouseScroll(float delta);
 	void handleDropFile(int count, const char** paths);
+
+	GLFWwindow* glfwWindow;
+	bool framebufferResized = false;
 	void windowResize();
 	uint32_t destWidth;
 	uint32_t destHeight;
 
-	GLFWwindow* glfwWindow;
-	bool framebufferResized = false;
-	void initWindow();
-
 	ApplicationBase();
 	virtual ~ApplicationBase();
-	
+
+	void initWindow();
 	void initVulkan();
+	void initSwapchain();
+	void setupSwapChain();
 
 	virtual VkResult createInstance(bool enableValidation);
 	virtual void render() = 0;
@@ -129,11 +116,9 @@ public:
 	virtual void processInput();
 	virtual void fileDropped(std::string filename);
 
-	void initSwapchain();
-	void setupSwapChain();
-
 	void mainLoop();
-	void renderFrame();
+	void logicTick();
+	void renderTick();
 
 	void write2JPG(char const* filename, int x, int y, int comp, const void* data, int quality);
 	void saveScreenshot(std::string filename);

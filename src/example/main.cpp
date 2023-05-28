@@ -212,58 +212,6 @@ public:
 		}
 	}
 
-	void loadScene(std::string filename)
-	{
-		LOG_INFO("Loading scene from {}", filename);
-		models.scene.destroy(device);
-		animationIndex = 0;
-		animationTimer = 0.0f;
-		auto tStart = std::chrono::high_resolution_clock::now();
-		models.scene.loadFromFile(filename, vulkanDevice, queue);
-		auto tFileLoad = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - tStart).count();
-		LOG_INFO("Loading took {} ms", tFileLoad);
-		camera->setPosition({ 0.0f, 0.0f, 1.0f });
-		camera->setRotation({ 0.0f, 0.0f, 0.0f });
-	}
-
-	void loadEnvironment(std::string filename)
-	{
-		LOG_INFO("Loading environment from {}", filename);
-		if (textures.environmentCube.image) {
-			textures.environmentCube.destroy();
-			textures.irradianceCube.destroy();
-			textures.prefilteredCube.destroy();
-		}
-		textures.environmentCube.loadFromFile(filename, VK_FORMAT_R16G16B16A16_SFLOAT, vulkanDevice, queue);
-		
-		//generate cubemap
-		uint32_t numMips = 0;
-		generateCubemaps(device, vulkanDevice, queue, pipelineCache, models.skybox, numMips, 
-			textures.environmentCube, textures.irradianceCube,textures.prefilteredCube);
-		shaderValuesParams.prefilteredCubeMipLevels = static_cast<float>(numMips);
-	}
-
-	void loadAssets()
-	{
-		const std::string assetpath = GetAssetPath();
-		struct stat info;
-		if (stat(assetpath.c_str(), &info) != 0) {
-			LOG_ERROR("Could not locate asset path in \"{}\".\nMake sure binary is run from correct relative directory!", assetpath);
-			exit(-1);
-		}
-		ReadDirectory(GetEnvironmentPath(), "*.ktx", environments, false);
-
-		textures.empty.loadFromFile(GetTexturePath() + "empty.ktx", VK_FORMAT_R8G8B8A8_UNORM, vulkanDevice, queue);
-
-		std::string sceneFile = GetModelPath() + "BoomBox/glTF/BoomBox.gltf";
-		std::string envMapFile = GetEnvironmentPath() + "papermill.ktx";
-
-		loadScene(sceneFile.c_str());
-		models.skybox.loadFromFile(GetModelPath() + "Box/glTF-Embedded/Box.gltf", vulkanDevice, queue);
-
-		loadEnvironment(envMapFile.c_str());
-	}
-
 	void setupNodeDescriptorSet(vkglTF::Node *node) {
 		if (node->mesh) {
 			VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
@@ -656,9 +604,7 @@ public:
 		}
 	}
 
-	/* 
-		Prepare and initialize uniform buffers containing shader parameters
-	*/
+	//Prepare and initialize uniform buffers containing shader parameters
 	void prepareUniformBuffers()
 	{
 		for (auto &uniformBuffer : uniformBuffers) {
@@ -782,6 +728,81 @@ public:
 		prepared = true;
 	}
 
+	virtual void render()
+	{
+		if (!prepared) {
+			return;
+		}
+
+		updateOverlay();
+
+		VK_CHECK_RESULT(vkWaitForFences(device, 1, &waitFences[frameIndex], VK_TRUE, UINT64_MAX));
+		VK_CHECK_RESULT(vkResetFences(device, 1, &waitFences[frameIndex]));
+
+		VkResult acquire = swapChain.acquireNextImage(presentCompleteSemaphores[frameIndex], &currentBuffer);
+		if ((acquire == VK_ERROR_OUT_OF_DATE_KHR) || (acquire == VK_SUBOPTIMAL_KHR)) {
+			windowResize();
+		}
+		else {
+			VK_CHECK_RESULT(acquire);
+		}
+
+		// Update UBOs
+		updateUniformBuffers();
+		UniformBufferSet currentUB = uniformBuffers[currentBuffer];
+		memcpy(currentUB.scene.mapped, &shaderValuesScene, sizeof(shaderValuesScene));
+		memcpy(currentUB.params.mapped, &shaderValuesParams, sizeof(shaderValuesParams));
+		memcpy(currentUB.skybox.mapped, &shaderValuesSkybox, sizeof(shaderValuesSkybox));
+
+		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pWaitDstStageMask = &waitDstStageMask;
+		submitInfo.pWaitSemaphores = &presentCompleteSemaphores[frameIndex];
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &renderCompleteSemaphores[frameIndex];
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffers[currentBuffer];
+		submitInfo.commandBufferCount = 1;
+		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, waitFences[frameIndex]));
+
+		VkResult present = swapChain.queuePresent(queue, currentBuffer, renderCompleteSemaphores[frameIndex]);
+		if (!((present == VK_SUCCESS) || (present == VK_SUBOPTIMAL_KHR))) {
+			if (present == VK_ERROR_OUT_OF_DATE_KHR) {
+				windowResize();
+				return;
+			}
+			else {
+				VK_CHECK_RESULT(present);
+			}
+		}
+
+		frameIndex += 1;
+		frameIndex %= renderAhead;
+
+		if (!paused) {
+			if (rotateModel) {
+				models.scene.transform->Rotate(glm::vec3(0, fpsTimer->frameTimer * 30.0f, 0));
+			}
+			if ((animate) && (models.scene.animations.size() > 0)) {
+				animationTimer += fpsTimer->frameTimer;
+				if (animationTimer > models.scene.animations[animationIndex].end) {
+					animationTimer -= models.scene.animations[animationIndex].end;
+				}
+				models.scene.updateAnimation(animationIndex, animationTimer);
+			}
+			updateParams();
+			if (rotateModel) {
+				updateUniformBuffers();
+			}
+		}
+		if (camera->updated) {
+			updateUniformBuffers();
+		}
+	}
+
+#pragma region UI
+
 	/*
 		Update ImGui user interface
 	*/
@@ -791,7 +812,7 @@ public:
 
 		ImVec2 lastDisplaySize = io.DisplaySize;
 		io.DisplaySize = ImVec2((float)width, (float)height);
-		io.DeltaTime = frameTimer;
+		io.DeltaTime = fpsTimer->frameTimer;
 
 		io.MousePos = ImVec2(mousePos.x, mousePos.y);
 		io.MouseDown[0] = mouseButtons.left;
@@ -811,13 +832,13 @@ public:
 		ImGui::Begin("Hummingbird Engine", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 		ImGui::PushItemWidth(100.0f * scale);
 
-		ui->text("%.1d fps (%.2f ms)", lastFPS, (1000.0f / lastFPS));
+		ui->text("%.1d fps (%.2f ms)", fpsTimer->lastFPS, (1000.0f / fpsTimer->lastFPS));
 
 		if (ui->header("Scene")) {
 			if (ui->button("Open gltf file")) {
 
 				char const* lFilterPatterns[2] = { "*.gltf", "*.glb" };
-				std::string defaultPath = GetModelPath() +"BoomBox/glTF/BoomBox.gltf";
+				std::string defaultPath = GetModelPath() + "BoomBox/glTF/BoomBox.gltf";
 				std::string fileName;
 				if (OpenFileDialog(fileName, "Select a glTF file to load", defaultPath.c_str(), lFilterPatterns, 2, "gltf files")) {
 					vkDeviceWaitIdle(device);
@@ -946,77 +967,60 @@ public:
 		}
 	}
 
-	virtual void render()
+#pragma endregion
+
+#pragma region Load
+
+	void loadScene(std::string filename)
 	{
-		if (!prepared) {
-			return;
+		LOG_INFO("Loading scene from {}", filename);
+		models.scene.destroy(device);
+		animationIndex = 0;
+		animationTimer = 0.0f;
+		auto tStart = std::chrono::high_resolution_clock::now();
+		models.scene.loadFromFile(filename, vulkanDevice, queue);
+		auto tFileLoad = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - tStart).count();
+		LOG_INFO("Loading took {} ms", tFileLoad);
+		camera->setPosition({ 0.0f, 0.0f, 1.0f });
+		camera->setRotation({ 0.0f, 0.0f, 0.0f });
+	}
+
+	void loadEnvironment(std::string filename)
+	{
+		LOG_INFO("Loading environment from {}", filename);
+		if (textures.environmentCube.image) {
+			textures.environmentCube.destroy();
+			textures.irradianceCube.destroy();
+			textures.prefilteredCube.destroy();
 		}
+		textures.environmentCube.loadFromFile(filename, VK_FORMAT_R16G16B16A16_SFLOAT, vulkanDevice, queue);
 
-		updateOverlay();
+		//generate cubemap
+		uint32_t numMips = 0;
+		generateCubemaps(device, vulkanDevice, queue, pipelineCache, models.skybox, numMips,
+			textures.environmentCube, textures.irradianceCube, textures.prefilteredCube);
+		shaderValuesParams.prefilteredCubeMipLevels = static_cast<float>(numMips);
+	}
 
-		VK_CHECK_RESULT(vkWaitForFences(device, 1, &waitFences[frameIndex], VK_TRUE, UINT64_MAX));
-		VK_CHECK_RESULT(vkResetFences(device, 1, &waitFences[frameIndex]));
-
-		VkResult acquire = swapChain.acquireNextImage(presentCompleteSemaphores[frameIndex], &currentBuffer);
-		if ((acquire == VK_ERROR_OUT_OF_DATE_KHR) || (acquire == VK_SUBOPTIMAL_KHR)) {
-			windowResize();
+	void loadAssets()
+	{
+		const std::string assetpath = GetAssetPath();
+		struct stat info;
+		if (stat(assetpath.c_str(), &info) != 0) {
+			LOG_ERROR("Could not locate asset path in \"{}\".\nMake sure binary is run from correct relative directory!", assetpath);
+			exit(-1);
 		}
-		else {
-			VK_CHECK_RESULT(acquire);
-		}
+		ReadDirectory(GetEnvironmentPath(), "*.ktx", environments, false);
 
-		// Update UBOs
-		updateUniformBuffers();
-		UniformBufferSet currentUB = uniformBuffers[currentBuffer];
-		memcpy(currentUB.scene.mapped, &shaderValuesScene, sizeof(shaderValuesScene));
-		memcpy(currentUB.params.mapped, &shaderValuesParams, sizeof(shaderValuesParams));
-		memcpy(currentUB.skybox.mapped, &shaderValuesSkybox, sizeof(shaderValuesSkybox));
+		textures.empty.loadFromFile(GetTexturePath() + "empty.ktx", VK_FORMAT_R8G8B8A8_UNORM, vulkanDevice, queue);
 
-		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.pWaitDstStageMask = &waitDstStageMask;
-		submitInfo.pWaitSemaphores = &presentCompleteSemaphores[frameIndex];
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &renderCompleteSemaphores[frameIndex];
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffers[currentBuffer];
-		submitInfo.commandBufferCount = 1;
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, waitFences[frameIndex]));
+		std::string sceneFile = GetModelPath() + "BoomBox/glTF/BoomBox.gltf";
+		std::string envMapFile = GetEnvironmentPath() + "papermill.ktx";
 
-		VkResult present = swapChain.queuePresent(queue, currentBuffer, renderCompleteSemaphores[frameIndex]);
-		if (!((present == VK_SUCCESS) || (present == VK_SUBOPTIMAL_KHR))) {
-			if (present == VK_ERROR_OUT_OF_DATE_KHR) {
-				windowResize();
-				return;
-			}
-			else {
-				VK_CHECK_RESULT(present);
-			}
-		}
+		loadScene(sceneFile.c_str());
+		models.skybox.loadFromFile(GetModelPath() + "Box/glTF-Embedded/Box.gltf", vulkanDevice, queue);
 
-		frameIndex += 1;
-		frameIndex %= renderAhead;
-
-		if (!paused) {
-			if (rotateModel) {
-				models.scene.transform->Rotate(glm::vec3(0, frameTimer * 30.0f, 0));
-			}
-			if ((animate) && (models.scene.animations.size() > 0)) {
-				animationTimer += frameTimer;
-				if (animationTimer > models.scene.animations[animationIndex].end) {
-					animationTimer -= models.scene.animations[animationIndex].end;
-				}
-				models.scene.updateAnimation(animationIndex, animationTimer);
-			}
-			updateParams();
-			if (rotateModel) {
-				updateUniformBuffers();
-			}
-		}
-		if (camera->updated) {
-			updateUniformBuffers();
-		}
+		loadEnvironment(envMapFile.c_str());
 	}
 
 	virtual void fileDropped(std::string filename)
@@ -1027,6 +1031,7 @@ public:
 		recordCommandBuffers();
 	}
 
+#pragma endregion
 };
 
 //entry

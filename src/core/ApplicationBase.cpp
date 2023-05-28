@@ -5,9 +5,9 @@
 
 #include "ApplicationBase.h"
 
-std::vector<const char*> ApplicationBase::args;
+#pragma region CallBack
 
-VKAPI_ATTR VkBool32 VKAPI_CALL debugMessageCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t srcObject, size_t location, int32_t msgCode, const char * pLayerPrefix, const char * pMsg, void * pUserData)
+VKAPI_ATTR VkBool32 VKAPI_CALL debugMessageCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t srcObject, size_t location, int32_t msgCode, const char* pLayerPrefix, const char* pMsg, void* pUserData)
 {
 	std::stringstream debugMessage;
 	debugMessage << " [" << pLayerPrefix << "] Code " << msgCode << " : " << pMsg;
@@ -22,6 +22,74 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugMessageCallback(VkDebugReportFlagsEXT flags,
 		LOG_DEBUG(debugMessage.str());
 	}
 	return VK_FALSE;
+}
+
+static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
+	if (app->prepared) {
+		app->framebufferResized = true;
+		app->destWidth = width;
+		app->destHeight = height;
+		app->windowResize();
+	}
+}
+
+static void cursorPosCallback(GLFWwindow* window, double x, double y) {
+	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
+	float xpos = static_cast<float>(x);
+	float ypos = static_cast<float>(y);
+	app->handleMouseMove(xpos, ypos);
+}
+
+static void scrollCallback(GLFWwindow* window, double x, double y) {
+	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
+	float wheelDelta = static_cast<float>(y);
+	app->handleMouseScroll(wheelDelta);
+}
+
+static void dropFileCallback(GLFWwindow* window, int count, const char** paths) {
+	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
+	app->handleDropFile(count, paths);
+}
+
+#pragma endregion
+
+ApplicationBase::ApplicationBase()
+{
+	fpsTimer = std::make_shared<FPSTimer>();
+}
+
+ApplicationBase::~ApplicationBase()
+{
+	// Clean up Vulkan resources
+	swapChain.cleanup();
+	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+	vkDestroyRenderPass(device, renderPass, nullptr);
+	for (uint32_t i = 0; i < frameBuffers.size(); i++) {
+		vkDestroyFramebuffer(device, frameBuffers[i], nullptr);
+	}
+	vkDestroyImageView(device, depthStencil.view, nullptr);
+	vkDestroyImage(device, depthStencil.image, nullptr);
+	vkFreeMemory(device, depthStencil.mem, nullptr);
+	vkDestroyPipelineCache(device, pipelineCache, nullptr);
+	vkDestroyCommandPool(device, cmdPool, nullptr);
+	if (settings.multiSampling) {
+		vkDestroyImage(device, multisampleTarget.color.image, nullptr);
+		vkDestroyImageView(device, multisampleTarget.color.view, nullptr);
+		vkFreeMemory(device, multisampleTarget.color.memory, nullptr);
+		vkDestroyImage(device, multisampleTarget.depth.image, nullptr);
+		vkDestroyImageView(device, multisampleTarget.depth.view, nullptr);
+		vkFreeMemory(device, multisampleTarget.depth.memory, nullptr);
+	}
+	delete vulkanDevice;
+	if (settings.validation) {
+		vkDestroyDebugReportCallback(instance, debugReportCallback, nullptr);
+	}
+	vkDestroyInstance(instance, nullptr);
+
+	glfwDestroyWindow(glfwWindow);
+	glfwTerminate();
+	LOG_INFO("Close");
 }
 
 VkResult ApplicationBase::createInstance(bool enableValidation)
@@ -65,6 +133,138 @@ VkResult ApplicationBase::createInstance(bool enableValidation)
 	}
 	return vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
 }
+
+void ApplicationBase::initWindow()
+{
+	glfwInit();
+
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+	if (settings.fullscreen) {
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+		width = destWidth = mode->width;
+		height = destHeight = mode->height;
+		glfwWindow = glfwCreateWindow(width, height, title.c_str(), monitor, nullptr);
+		LOG_INFO("Window mode: fullscreen. Width:{0} Height:{1}", width, height);
+	}
+	else {
+		glfwWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
+		LOG_INFO("Window mode: windowe. Width:{0} Height:{1}", width, height);
+	}
+
+	if (!iconPath.empty()) {
+		GLFWimage images[1];
+		images[0].pixels = stbi_load(iconPath.c_str(), &images[0].width, &images[0].height, 0, 4);
+		glfwSetWindowIcon(glfwWindow, 1, images);
+		stbi_image_free(images[0].pixels);
+	}
+
+	glfwSetWindowUserPointer(glfwWindow, this);
+	glfwSetCursorPosCallback(glfwWindow, cursorPosCallback);
+	glfwSetScrollCallback(glfwWindow, scrollCallback);
+	glfwSetDropCallback(glfwWindow, dropFileCallback);
+	glfwSetFramebufferSizeCallback(glfwWindow, framebufferResizeCallback);
+}
+
+void ApplicationBase::initVulkan()
+{
+	LOG_INFO("Vulkan init...");
+
+	VkResult err;
+
+	/*
+		Instance creation
+	*/
+	err = createInstance(settings.validation);
+	if (err) {
+		LOG_ERROR("Could not create Vulkan instance!");
+		exit(err);
+	}
+
+	/*
+		Validation layers
+	*/
+	if (settings.validation) {
+		vkCreateDebugReportCallback = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT"));
+		vkDestroyDebugReportCallback = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT"));
+		VkDebugReportCallbackCreateInfoEXT debugCreateInfo{};
+		debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
+		debugCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)debugMessageCallback;
+		debugCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+		VK_CHECK_RESULT(vkCreateDebugReportCallback(instance, &debugCreateInfo, nullptr, &debugReportCallback));
+	}
+
+	/*
+		GPU selection
+	*/
+	uint32_t gpuCount = 0;
+	VK_CHECK_RESULT(vkEnumeratePhysicalDevices(instance, &gpuCount, nullptr));
+	assert(gpuCount > 0);
+	std::vector<VkPhysicalDevice> physicalDevices(gpuCount);
+	err = vkEnumeratePhysicalDevices(instance, &gpuCount, physicalDevices.data());
+	if (err) {
+		LOG_ERROR("Could not enumerate physical devices!");
+		exit(err);
+	}
+
+	uint32_t selectedDevice = 0;
+	physicalDevice = physicalDevices[selectedDevice];
+
+	vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+	vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemoryProperties);
+
+	/*
+		Device creation
+	*/
+	vulkanDevice = new hbvk::VulkanDevice(physicalDevice);
+	VkPhysicalDeviceFeatures enabledFeatures{};
+	if (deviceFeatures.samplerAnisotropy) {
+		enabledFeatures.samplerAnisotropy = VK_TRUE;
+	}
+	std::vector<const char*> enabledExtensions{};
+	VkResult res = vulkanDevice->createLogicalDevice(enabledFeatures, enabledExtensions);
+	if (res != VK_SUCCESS) {
+		LOG_ERROR("Could not create Vulkan device!");
+		exit(res);
+	}
+	device = vulkanDevice->logicalDevice;
+
+	/*
+		Graphics queue
+	*/
+	vkGetDeviceQueue(device, vulkanDevice->queueFamilyIndices.graphics, 0, &queue);
+
+	/*
+		Suitable depth format
+	*/
+	std::vector<VkFormat> depthFormats = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D16_UNORM };
+	VkBool32 validDepthFormat = false;
+	for (auto& format : depthFormats) {
+		VkFormatProperties formatProps;
+		vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &formatProps);
+		if (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+			depthFormat = format;
+			validDepthFormat = true;
+			break;
+		}
+	}
+	assert(validDepthFormat);
+
+	swapChain.connect(instance, physicalDevice, device);
+}
+
+void ApplicationBase::initSwapchain()
+{
+	swapChain.initSurface(glfwWindow);
+}
+
+void ApplicationBase::setupSwapChain()
+{
+	swapChain.create(&width, &height, settings.vsync);
+}
+
 void ApplicationBase::prepare()
 {
 	LOG_INFO("Prepare...");
@@ -264,31 +464,68 @@ void ApplicationBase::prepare()
 	setupFrameBuffer();
 }
 
-void ApplicationBase::fileDropped(std::string filename) {
-	LOG_INFO("drop file into window, file path:{}", filename);
-}
+void ApplicationBase::processInput() {
+	if (camera->firstperson)
+	{
+		if (checkKeyPress(glfwWindow, KEY_W)) {
+			camera->keys.up = true;
+		}
+		if (checkKeyPress(glfwWindow, KEY_S)) {
+			camera->keys.down = true;
+		}
+		if (checkKeyPress(glfwWindow, KEY_A)) {
+			camera->keys.left = true;
+		}
+		if (checkKeyPress(glfwWindow, KEY_D)) {
+			camera->keys.right = true;
+		}
+	}
 
-void ApplicationBase::renderFrame()
-{
-	auto tStart = std::chrono::high_resolution_clock::now();
-
-	render();
-	frameCounter++;
-	auto tEnd = std::chrono::high_resolution_clock::now();
-	auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-	frameTimer = (float)tDiff / 1000.0f;
-	camera->update(frameTimer);
-	fpsTimer += (float)tDiff;
-	if (fpsTimer > 1000.0f) {
-		lastFPS = static_cast<uint32_t>((float)frameCounter * (1000.0f / fpsTimer));
-		fpsTimer = 0.0f;
-		frameCounter = 0;
+	if (checkKeyPress(glfwWindow, KEY_P)) {
+		paused = !paused;
+	}
+	if (checkKeyPress(glfwWindow, KEY_ESCAPE)) {
+		glfwSetWindowShouldClose(glfwWindow, GL_TRUE);
+	}
+	if (checkMouseButtonPress(glfwWindow, MOUSE_BUTTON_LEFT)) {
+		mouseButtons.left = true;
+		double xPos, yPos;
+		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
+		mousePos = glm::vec2(static_cast<float>(xPos), static_cast<float>(yPos));
+	}
+	if (checkMouseButtonPress(glfwWindow, MOUSE_BUTTON_RIGHT)) {
+		mouseButtons.right = true;
+		double xPos, yPos;
+		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
+		mousePos = glm::vec2(static_cast<float>(xPos), static_cast<float>(yPos));
+	}
+	if (checkMouseButtonPress(glfwWindow, MOUSE_BUTTON_MIDDLE)) {
+		mouseButtons.middle = true;
+		double xPos, yPos;
+		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
+		mousePos = glm::vec2(static_cast<float>(xPos), static_cast<float>(yPos));
+	}
+	if (checkMouseButtonRelease(glfwWindow, MOUSE_BUTTON_LEFT)) {
+		mouseButtons.left = false;
+	}
+	if (checkMouseButtonRelease(glfwWindow, MOUSE_BUTTON_RIGHT)) {
+		mouseButtons.right = false;
+	}
+	if (checkMouseButtonRelease(glfwWindow, MOUSE_BUTTON_MIDDLE)) {
+		mouseButtons.middle = false;
 	}
 }
 
-void ApplicationBase::write2JPG(char const* filename, int x, int y, int comp, const void* data, int quality)
+void ApplicationBase::renderTick()
 {
-	stbi_write_jpg(filename, x, y, comp, data, quality);
+	fpsTimer->tickBegin();
+	render();
+	fpsTimer->tickEnd();
+	camera->update(fpsTimer->frameTimer);
+}
+
+void ApplicationBase::logicTick()
+{
 }
 
 void ApplicationBase::mainLoop() {
@@ -297,7 +534,8 @@ void ApplicationBase::mainLoop() {
 
 	while (!glfwWindowShouldClose(glfwWindow)) {
 		processInput();
-		renderFrame();
+		logicTick();
+		renderTick();
 
 		glfwSwapBuffers(glfwWindow);
 		glfwPollEvents();
@@ -305,192 +543,6 @@ void ApplicationBase::mainLoop() {
 
 	// Flush device to make sure all resources can be freed 
 	vkDeviceWaitIdle(device);
-}
-
-static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
-	if (app->prepared) {
-		app->framebufferResized = true;
-		app->destWidth = width;
-		app->destHeight = height;
-		app->windowResize();
-	}
-}
-
-static void cursorPosCallback(GLFWwindow* window, double x, double y) {
-	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
-	float xpos = static_cast<float>(x);
-	float ypos = static_cast<float>(y);
-	app->handleMouseMove(xpos, ypos);
-}
-
-static void scrollCallback(GLFWwindow* window, double x, double y) {
-	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
-	float wheelDelta = static_cast<float>(y);
-	app->handleMouseScroll(wheelDelta);
-}
-
-static void dropFileCallback(GLFWwindow* window, int count, const char** paths) {
-	auto app = reinterpret_cast<ApplicationBase*>(glfwGetWindowUserPointer(window));
-	app->handleDropFile(count, paths);
-}
-
-void ApplicationBase::initWindow()
-{
-	glfwInit();
-
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-	if (settings.fullscreen) {
-		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-		width = destWidth = mode->width;
-		height = destHeight = mode->height;
-		glfwWindow = glfwCreateWindow(width, height, title.c_str(), monitor, nullptr);
-		LOG_INFO("Window mode: fullscreen. Width:{0} Height:{1}", width, height);
-	}
-	else {
-		glfwWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-		LOG_INFO("Window mode: windowe. Width:{0} Height:{1}", width, height);
-	}
-
-	if (!iconPath.empty()) {
-		GLFWimage images[1];
-		images[0].pixels = stbi_load(iconPath.c_str(), &images[0].width, &images[0].height, 0, 4);
-		glfwSetWindowIcon(glfwWindow, 1, images);
-		stbi_image_free(images[0].pixels);
-	}
-
-	glfwSetWindowUserPointer(glfwWindow, this);
-	glfwSetCursorPosCallback(glfwWindow, cursorPosCallback);
-	glfwSetScrollCallback(glfwWindow, scrollCallback);
-	glfwSetDropCallback(glfwWindow, dropFileCallback);
-	glfwSetFramebufferSizeCallback(glfwWindow, framebufferResizeCallback);
-}
-
-ApplicationBase::ApplicationBase()
-{
-}
-
-ApplicationBase::~ApplicationBase()
-{
-	// Clean up Vulkan resources
-	swapChain.cleanup();
-	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-	vkDestroyRenderPass(device, renderPass, nullptr);
-	for (uint32_t i = 0; i < frameBuffers.size(); i++) {
-		vkDestroyFramebuffer(device, frameBuffers[i], nullptr);
-	}
-	vkDestroyImageView(device, depthStencil.view, nullptr);
-	vkDestroyImage(device, depthStencil.image, nullptr);
-	vkFreeMemory(device, depthStencil.mem, nullptr);
-	vkDestroyPipelineCache(device, pipelineCache, nullptr);
-	vkDestroyCommandPool(device, cmdPool, nullptr);
-	if (settings.multiSampling) {
-		vkDestroyImage(device, multisampleTarget.color.image, nullptr);
-		vkDestroyImageView(device, multisampleTarget.color.view, nullptr);
-		vkFreeMemory(device, multisampleTarget.color.memory, nullptr);
-		vkDestroyImage(device, multisampleTarget.depth.image, nullptr);
-		vkDestroyImageView(device, multisampleTarget.depth.view, nullptr);
-		vkFreeMemory(device, multisampleTarget.depth.memory, nullptr);
-	}
-	delete vulkanDevice;
-	if (settings.validation) {
-		vkDestroyDebugReportCallback(instance, debugReportCallback, nullptr);
-	}
-	vkDestroyInstance(instance, nullptr);
-
-	glfwDestroyWindow(glfwWindow);
-	glfwTerminate();
-	LOG_INFO("Close");
-}
-
-void ApplicationBase::initVulkan()
-{
-	LOG_INFO("Vulkan init...");
-
-	VkResult err;
-
-	/*
-		Instance creation
-	*/
-	err = createInstance(settings.validation);
-	if (err) {
-		LOG_ERROR("Could not create Vulkan instance!");
-		exit(err);
-	}
-
-	/*
-		Validation layers
-	*/
-	if (settings.validation) {
-		vkCreateDebugReportCallback = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT"));
-		vkDestroyDebugReportCallback = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT"));
-		VkDebugReportCallbackCreateInfoEXT debugCreateInfo{};
-		debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
-		debugCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)debugMessageCallback;
-		debugCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
-		VK_CHECK_RESULT(vkCreateDebugReportCallback(instance, &debugCreateInfo, nullptr, &debugReportCallback));
-	}
-
-	/*
-		GPU selection
-	*/
-	uint32_t gpuCount = 0;
-	VK_CHECK_RESULT(vkEnumeratePhysicalDevices(instance, &gpuCount, nullptr));
-	assert(gpuCount > 0);
-	std::vector<VkPhysicalDevice> physicalDevices(gpuCount);
-	err = vkEnumeratePhysicalDevices(instance, &gpuCount, physicalDevices.data());
-	if (err) {
-		LOG_ERROR("Could not enumerate physical devices!");
-		exit(err);
-	}
-
-	uint32_t selectedDevice = 0;
-	physicalDevice = physicalDevices[selectedDevice];
-
-	vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-	vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
-	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemoryProperties);
-
-	/*
-		Device creation
-	*/
-	vulkanDevice = new hbvk::VulkanDevice(physicalDevice);
-	VkPhysicalDeviceFeatures enabledFeatures{};
-	if (deviceFeatures.samplerAnisotropy) {
-		enabledFeatures.samplerAnisotropy = VK_TRUE;
-	}
-	std::vector<const char*> enabledExtensions{};
-	VkResult res = vulkanDevice->createLogicalDevice(enabledFeatures, enabledExtensions);
-	if (res != VK_SUCCESS) {
-		LOG_ERROR("Could not create Vulkan device!");
-		exit(res);
-	}
-	device = vulkanDevice->logicalDevice;
-
-	/*
-		Graphics queue
-	*/
-	vkGetDeviceQueue(device, vulkanDevice->queueFamilyIndices.graphics, 0, &queue);
-
-	/*
-		Suitable depth format
-	*/
-	std::vector<VkFormat> depthFormats = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D16_UNORM };
-	VkBool32 validDepthFormat = false;
-	for (auto& format : depthFormats) {
-		VkFormatProperties formatProps;
-		vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &formatProps);
-		if (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-			depthFormat = format;
-			validDepthFormat = true;
-			break;
-		}
-	}
-	assert(validDepthFormat);
-
-	swapChain.connect(instance, physicalDevice, device);
 }
 
 inline VkImageCreateInfo imageCreateInfo()
@@ -742,56 +794,13 @@ void ApplicationBase::saveScreenshot(std::string filename)
 	screenshotSaved = true;
 }
 
-void ApplicationBase::processInput() {
-	if (camera->firstperson)
-	{
-		if (checkKeyPress(glfwWindow, KEY_W)) {
-			camera->keys.up = true;
-		}
-		if (checkKeyPress(glfwWindow, KEY_S)) {
-			camera->keys.down = true;
-		}
-		if (checkKeyPress(glfwWindow, KEY_A)) {
-			camera->keys.left = true;
-		}
-		if (checkKeyPress(glfwWindow, KEY_D)) {
-			camera->keys.right = true;
-		}
-	}
+void ApplicationBase::fileDropped(std::string filename) {
+	LOG_INFO("drop file into window, file path:{}", filename);
+}
 
-	if (checkKeyPress(glfwWindow, KEY_P)) {
-		paused = !paused;
-	}
-	if (checkKeyPress(glfwWindow, KEY_ESCAPE)) {
-		glfwSetWindowShouldClose(glfwWindow, GL_TRUE);
-	}
-	if (checkMouseButtonPress(glfwWindow, MOUSE_BUTTON_LEFT)) {
-		mouseButtons.left = true;
-		double xPos, yPos;
-		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
-		mousePos = glm::vec2(static_cast<float>(xPos), static_cast<float>(yPos));
-	}
-	if (checkMouseButtonPress(glfwWindow, MOUSE_BUTTON_RIGHT)) {
-		mouseButtons.right = true;
-		double xPos, yPos;
-		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
-		mousePos = glm::vec2(static_cast<float>(xPos), static_cast<float>(yPos));
-	}
-	if (checkMouseButtonPress(glfwWindow, MOUSE_BUTTON_MIDDLE)) {
-		mouseButtons.middle = true;
-		double xPos, yPos;
-		glfwGetCursorPos(glfwWindow, &xPos, &yPos);
-		mousePos = glm::vec2(static_cast<float>(xPos), static_cast<float>(yPos));
-	}
-	if (checkMouseButtonRelease(glfwWindow, MOUSE_BUTTON_LEFT)) {
-		mouseButtons.left = false;
-	}
-	if (checkMouseButtonRelease(glfwWindow, MOUSE_BUTTON_RIGHT)) {
-		mouseButtons.right = false;
-	}
-	if (checkMouseButtonRelease(glfwWindow, MOUSE_BUTTON_MIDDLE)) {
-		mouseButtons.middle = false;
-	}
+void ApplicationBase::write2JPG(char const* filename, int x, int y, int comp, const void* data, int quality)
+{
+	stbi_write_jpg(filename, x, y, comp, data, quality);
 }
 
 void ApplicationBase::windowResized() {}
@@ -1047,14 +1056,4 @@ void ApplicationBase::handleMouseMove(float x, float y)
 		camera->translate(glm::vec3(-dx * 0.01f, -dy * 0.01f, 0.0f));
 	}
 	mousePos = glm::vec2(x, y);
-}
-
-void ApplicationBase::initSwapchain()
-{
-	swapChain.initSurface(glfwWindow);
-}
-
-void ApplicationBase::setupSwapChain()
-{
-	swapChain.create(&width, &height, settings.vsync);
 }

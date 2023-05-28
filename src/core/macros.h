@@ -16,10 +16,14 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <sstream>
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <array>
 #include <map>
+#include <numeric>
+#include <chrono>
 
 //#define TINYGLTF_NO_STB_IMAGE_WRITE
 #include "tiny_gltf.h"
