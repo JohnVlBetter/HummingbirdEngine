@@ -1029,21 +1029,5 @@ public:
 
 };
 
-ApplicationExample *applicationExample;
-
-int main() {
-	try {
-		applicationExample = new ApplicationExample();
-		applicationExample->initWindow();
-		applicationExample->initVulkan();
-		applicationExample->prepare();
-		applicationExample->mainLoop();
-		delete(applicationExample);
-	}
-	catch (const std::exception& e) {
-		LOG_ERROR(e.what());
-		return EXIT_FAILURE;
-	}
-
-	return EXIT_SUCCESS;
-}
+//entry
+HB_MAIN(ApplicationExample)

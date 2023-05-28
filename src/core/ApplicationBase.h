@@ -138,3 +138,21 @@ public:
 	void write2JPG(char const* filename, int x, int y, int comp, const void* data, int quality);
 	void saveScreenshot(std::string filename);
 };
+
+#define HB_MAIN(APP_NAME)					\
+APP_NAME *application;						\
+int main() {								\
+try {										\
+	application = new APP_NAME();			\
+	application->initWindow();				\
+	application->initVulkan();				\
+	application->prepare();					\
+	application->mainLoop();				\
+	delete(application);					\
+}											\
+catch (const std::exception& e) {			\
+	LOG_ERROR(e.what());					\
+	return EXIT_FAILURE;					\
+}											\
+return EXIT_SUCCESS;						\
+}

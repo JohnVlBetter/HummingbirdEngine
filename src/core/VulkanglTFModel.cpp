@@ -49,7 +49,6 @@ namespace vkglTF
 	}
 
 	// Model
-
 	void Model::destroy(VkDevice device)
 	{
 		if (vertices.buffer != VK_NULL_HANDLE) {
