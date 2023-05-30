@@ -1,3 +1,5 @@
+//Hummingbird PBR vertex shader
+
 #version 450
 
 layout (location = 0) in vec3 inPos;
@@ -8,8 +10,7 @@ layout (location = 4) in vec4 inJoint0;
 layout (location = 5) in vec4 inWeight0;
 layout (location = 6) in vec4 inColor0;
 
-layout (set = 0, binding = 0) uniform UBO 
-{
+layout (set = 0, binding = 0) uniform UBO {
 	mat4 projection;
 	mat4 model;
 	mat4 view;
@@ -17,8 +18,7 @@ layout (set = 0, binding = 0) uniform UBO
 } ubo;
 
 #define MAX_NUM_JOINTS 128
-
-layout (set = 2, binding = 0) uniform UBONode {
+layout (set = 2, binding = 0) uniform Node {
 	mat4 matrix;
 	mat4 jointMatrix[MAX_NUM_JOINTS];
 	float jointCount;
@@ -30,28 +30,28 @@ layout (location = 2) out vec2 outUV0;
 layout (location = 3) out vec2 outUV1;
 layout (location = 4) out vec4 outColor0;
 
-void main() 
-{
-	outColor0 = inColor0;
-
+void main() {
 	vec4 locPos;
 	if (node.jointCount > 0.0) {
-		// Mesh is skinned
-		mat4 skinMat = 
-			inWeight0.x * node.jointMatrix[int(inJoint0.x)] +
-			inWeight0.y * node.jointMatrix[int(inJoint0.y)] +
-			inWeight0.z * node.jointMatrix[int(inJoint0.z)] +
-			inWeight0.w * node.jointMatrix[int(inJoint0.w)];
+		//Skinned Mesh
+		mat4 skinMat = inWeight0.x * node.jointMatrix[int(inJoint0.x)] +
+					   inWeight0.y * node.jointMatrix[int(inJoint0.y)] +
+					   inWeight0.z * node.jointMatrix[int(inJoint0.z)] +
+					   inWeight0.w * node.jointMatrix[int(inJoint0.w)];
 
 		locPos = ubo.model * node.matrix * skinMat * vec4(inPos, 1.0);
+		//https://juejin.cn/post/6991616637321347085
 		outNormal = normalize(transpose(inverse(mat3(ubo.model * node.matrix * skinMat))) * inNormal);
 	} else {
 		locPos = ubo.model * node.matrix * vec4(inPos, 1.0);
+		//https://juejin.cn/post/6991616637321347085
 		outNormal = normalize(transpose(inverse(mat3(ubo.model * node.matrix))) * inNormal);
 	}
 	locPos.y = -locPos.y;
+
 	outWorldPos = locPos.xyz / locPos.w;
 	outUV0 = inUV0;
 	outUV1 = inUV1;
+	outColor0 = inColor0;
 	gl_Position =  ubo.projection * ubo.view * vec4(outWorldPos, 1.0);
 }

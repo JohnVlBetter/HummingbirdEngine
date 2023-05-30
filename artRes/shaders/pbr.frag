@@ -1,4 +1,4 @@
-//Hummingbird PBR shader
+//Hummingbird PBR fragment shader
 
 #version 450
 
@@ -54,3 +54,8 @@ layout (push_constant) uniform Material {
 } material;
 
 layout (location = 0) out vec4 outColor;
+
+void main()
+{
+    outColor.rgb = vec3(0.7);
+}
