@@ -825,7 +825,7 @@ namespace vkglTF
 
 					if (primitive->material.pbrWorkflows.metallicRoughness) {
 						// Metallic roughness workflow
-						pushConstBlockMaterial.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
+						pushConstBlockMaterial.workflow = static_cast<float>(PBR_MR);
 						pushConstBlockMaterial.baseColorFactor = primitive->material.baseColorFactor;
 						pushConstBlockMaterial.metallicFactor = primitive->material.metallicFactor;
 						pushConstBlockMaterial.roughnessFactor = primitive->material.roughnessFactor;
@@ -835,7 +835,7 @@ namespace vkglTF
 
 					if (primitive->material.pbrWorkflows.specularGlossiness) {
 						// Specular glossiness workflow
-						pushConstBlockMaterial.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSINESS);
+						pushConstBlockMaterial.workflow = static_cast<float>(PBR_SG);
 						pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.extension.specularGlossinessTexture != nullptr ? primitive->material.texCoordSets.specularGlossiness : -1;
 						pushConstBlockMaterial.colorTextureSet = primitive->material.extension.diffuseTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
 						pushConstBlockMaterial.diffuseFactor = primitive->material.extension.diffuseFactor;

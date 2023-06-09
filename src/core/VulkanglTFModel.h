@@ -64,7 +64,7 @@ namespace vkglTF
 		float end = std::numeric_limits<float>::min();
 	};
 
-	enum PBRWorkflows { PBR_WORKFLOW_METALLIC_ROUGHNESS = 0, PBR_WORKFLOW_SPECULAR_GLOSINESS = 1 };
+	enum PBRWorkflows { PBR_MR = 0, PBR_SG = 1 };
 
 	struct Model {
 

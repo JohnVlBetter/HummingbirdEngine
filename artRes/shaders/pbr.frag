@@ -55,11 +55,8 @@ layout (push_constant) uniform Material {
 
 layout (location = 0) out vec4 outColor;
 
-// Find the normal for this fragment, pulling either from a predefined normal map
-// or from the interpolated mesh normal and tangent attributes.
-vec3 getNormal()
+vec3 GetNormal()
 {
-	// Perturb normal, see http://www.thetenthplanet.de/archives/1180
 	vec3 tangentNormal = texture(normalMap, material.normalTextureSet == 0 ? inUV0 : inUV1).xyz * 2.0 - 1.0;
 
 	vec3 q1 = dFdx(inWorldPos);
@@ -77,6 +74,9 @@ vec3 getNormal()
 
 const float PI = 3.141592653589793;
 const float MinRoughness = 0.04;
+
+const float PBR_MR = 0.0;
+const float PBR_SG = 1.0f;
 
 vec3 Diffuse(vec3 diffuseColor){
     return diffuseColor / PI;
@@ -115,28 +115,44 @@ float G_Smith(float NdotV, float NdotL, float roughness)
 
 void main()
 {
-    vec4 baseColor;
-    if (material.baseColorTextureSet > -1) {
-		baseColor = texture(colorMap, material.baseColorTextureSet == 0 ? inUV0 : inUV1) * material.baseColorFactor;
-	} else {
-		baseColor = material.baseColorFactor;
+    vec4 baseColor = material.baseColorFactor;
+    float metallic;
+    float roughness;
+
+	if (material.alphaMask == 1.0f) {
+		if (material.baseColorTextureSet > -1) {
+			baseColor = texture(colorMap, material.baseColorTextureSet == 0 ? inUV0 : inUV1) * material.baseColorFactor;
+		}
+		if (baseColor.a < material.alphaMaskCutoff) discard;
 	}
 
-    float metallic;
-    float roughness = material.roughnessFactor;
-	metallic = material.metallicFactor;
-	if (material.physicalDescriptorTextureSet > -1) {
-		// Roughness is stored in the 'g' channel, metallic is stored in the 'b' channel.
-		// This layout intentionally reserves the 'r' channel for (optional) occlusion map data
-		vec4 mrSample = texture(physicalDescriptorMap, material.physicalDescriptorTextureSet == 0 ? inUV0 : inUV1);
-		roughness = mrSample.g * roughness;
-		metallic = mrSample.b * metallic;
-	} else {
-		roughness = clamp(roughness, MinRoughness, 1.0);
-		metallic = clamp(metallic, 0.0, 1.0);
+	if (material.workflow == PBR_MR) {
+		roughness = material.roughnessFactor;
+		metallic = material.metallicFactor;
+		if (material.physicalDescriptorTextureSet > -1) {
+			// Roughness is stored in the 'g' channel, metallic is stored in the 'b' channel.
+			// This layout intentionally reserves the 'r' channel for (optional) occlusion map data
+			vec4 mrSample = texture(physicalDescriptorMap, material.physicalDescriptorTextureSet == 0 ? inUV0 : inUV1);
+			roughness = mrSample.g * roughness;
+			metallic = mrSample.b * metallic;
+		} else {
+			roughness = clamp(roughness, MinRoughness, 1.0);
+			metallic = clamp(metallic, 0.0, 1.0);
+		}
+
+		//base color
+    	if (material.baseColorTextureSet > -1) {
+			baseColor = texture(colorMap, material.baseColorTextureSet == 0 ? inUV0 : inUV1) * material.baseColorFactor;
+		} else {
+			baseColor = material.baseColorFactor;
+		}
 	}
 	
-	vec3 n = (material.normalTextureSet > -1) ? getNormal() : normalize(inNormal);
+	// Roughness is authored as perceptual roughness; as is convention,
+	// convert to material roughness by squaring the perceptual roughness.
+	roughness = roughness * roughness;
+	
+	vec3 n = (material.normalTextureSet > -1) ? GetNormal() : normalize(inNormal);
 	vec3 v = normalize(ubo.camPos - inWorldPos);    // view dir
 	vec3 l = normalize(uboParams.lightDir.xyz);     // light dir
 	vec3 h = normalize(l+v);                        // half vector
