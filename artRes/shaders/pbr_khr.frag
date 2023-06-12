@@ -348,7 +348,7 @@ void main()
 	vec3 color = NdotL * uboParams.lightColor * (diffuseContrib + specContrib);
 
 	// Calculate lighting contribution from image based lighting source (IBL)
-	//color += getIBLContribution(pbrInputs, n, reflection);
+	color += getIBLContribution(pbrInputs, n, reflection);
 
 	const float u_OcclusionStrength = 1.0f;
 	// Apply optional PBR terms for additional (optional) shading

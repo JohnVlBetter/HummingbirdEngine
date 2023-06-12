@@ -72,6 +72,24 @@ vec3 GetNormal()
 	return normalize(TBN * tangentNormal);
 }
 
+vec3 Tonemap_F(vec3 color)
+{
+	float A = 0.22;
+	float B = 0.30;
+	float C = 0.10;
+	float D = 0.20;
+	float E = 0.01;
+	float F = 0.30;
+	return ((color * (A * color + C * B) + D * E) / (color * (A * color + B) + D * F)) - E / F;
+}
+
+vec4 Uncharted2ToneMapping(vec4 color)
+{
+	vec3 outcol = Tonemap_F(color.rgb * uboParams.exposure);
+	outcol = outcol * (1.0f / Tonemap_F(vec3(11.2f)));	
+	return vec4(pow(outcol, vec3(1.0f / uboParams.gamma)), color.a);
+}
+
 const float PI = 3.141592653589793;
 const float MinRoughness = 0.04;
 
@@ -111,6 +129,17 @@ float G_Smith(float NdotV, float NdotL, float roughness)
     float ggx2 = G_SchlickGGX(NdotL, k);
 
     return ggx1 * ggx2;
+}
+
+vec3 IBL(vec3 diffuseColor, vec3 specularColor, vec3 n, vec3 reflection, float roughness, float NdotV){
+	vec3 diffuse = Uncharted2ToneMapping(texture(samplerIrradiance,n)).rgb * diffuseColor;
+
+	vec3 brdf = texture(samplerBRDFLUT, vec2(NdotV, 1.0 - roughness)).rgb;
+	float lod = roughness * uboParams.prefilteredCubeMipLevels;
+	vec3 prefilteredColor = Uncharted2ToneMapping(textureLod(prefilteredMap, reflection, lod)).rgb;
+	vec3 specular = prefilteredColor * (specularColor * brdf.r + brdf.g);
+
+	return diffuse + specular;
 }
 
 void main()
@@ -156,6 +185,8 @@ void main()
 	vec3 v = normalize(ubo.camPos - inWorldPos);    // view dir
 	vec3 l = normalize(uboParams.lightDir.xyz);     // light dir
 	vec3 h = normalize(l+v);                        // half vector
+	vec3 reflection = -normalize(reflect(v, n));
+	reflection.y *= -1.0;
 
 	float VdotH = clamp(dot(v, h), 0.0, 1.0);
 	float NdotH = clamp(dot(n, h), 0.0, 1.0);
@@ -174,6 +205,10 @@ void main()
     vec3 diffuse = Diffuse(diffuseColor);
 
     vec3 color = NdotL * uboParams.lightColor * (diffuse + specular);
+
+	vec3 specularColor = mix(vec3(MinRoughness), baseColor.rgb, metallic);
+	//IBL vec3 IBL(vec3 diffuseColor, vec3 specularColor, vec3 n, vec3 reflection, float roughness, float NdotV)
+	color += IBL(diffuseColor, specularColor, n, reflection, roughness, NdotV);
 
 	// AO
 	if (material.occlusionTextureSet > -1) {
