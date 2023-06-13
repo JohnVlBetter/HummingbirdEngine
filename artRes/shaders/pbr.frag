@@ -80,13 +80,26 @@ vec3 Tonemap_F(vec3 color)
 	float D = 0.20;
 	float E = 0.01;
 	float F = 0.30;
+
 	return ((color * (A * color + C * B) + D * E) / (color * (A * color + B) + D * F)) - E / F;
 }
 
-vec4 Uncharted2ToneMapping(vec4 color)
+/*vec3 ACESToneMapping(vec3 color)
+{
+	float A = 2.51;
+	float B = 0.03;
+	float C = 2.43;
+	float D = 0.59;
+	float E = 0.14;
+
+	return (color * (A * color + B)) / (color * (C * color + D) + E);
+}*/
+
+vec4 Tonemap(vec4 color)
 {
 	vec3 outcol = Tonemap_F(color.rgb * uboParams.exposure);
 	outcol = outcol * (1.0f / Tonemap_F(vec3(11.2f)));	
+	//gamma correction
 	return vec4(pow(outcol, vec3(1.0f / uboParams.gamma)), color.a);
 }
 
@@ -132,11 +145,11 @@ float G_Smith(float NdotV, float NdotL, float roughness)
 }
 
 vec3 IBL(vec3 diffuseColor, vec3 specularColor, vec3 n, vec3 reflection, float roughness, float NdotV){
-	vec3 diffuse = Uncharted2ToneMapping(texture(samplerIrradiance,n)).rgb * diffuseColor;
+	vec3 diffuse = Tonemap(texture(samplerIrradiance,n)).rgb * diffuseColor;
 
 	vec3 brdf = texture(samplerBRDFLUT, vec2(NdotV, 1.0 - roughness)).rgb;
 	float lod = roughness * uboParams.prefilteredCubeMipLevels;
-	vec3 prefilteredColor = Uncharted2ToneMapping(textureLod(prefilteredMap, reflection, lod)).rgb;
+	vec3 prefilteredColor = Tonemap(textureLod(prefilteredMap, reflection, lod)).rgb;
 	vec3 specular = prefilteredColor * (specularColor * brdf.r + brdf.g);
 
 	return diffuse + specular;
@@ -223,4 +236,53 @@ void main()
 	}
 
     outColor = vec4(color, baseColor.a);
+
+	// Shader inputs debug visualization
+	if (uboParams.debugViewInputs > 0.0) {
+		int index = int(uboParams.debugViewInputs);
+		switch (index) {
+			case 1:
+				outColor.rgba = material.baseColorTextureSet > -1 ? texture(colorMap, material.baseColorTextureSet == 0 ? inUV0 : inUV1) : vec4(1.0f);
+				break;
+			case 2:
+				outColor.rgb = (material.normalTextureSet > -1) ? texture(normalMap, material.normalTextureSet == 0 ? inUV0 : inUV1).rgb : normalize(inNormal);
+				break;
+			case 3:
+				outColor.rgb = (material.occlusionTextureSet > -1) ? texture(aoMap, material.occlusionTextureSet == 0 ? inUV0 : inUV1).rrr : vec3(0.0f);
+				break;
+			case 4:
+				outColor.rgb = (material.emissiveTextureSet > -1) ? texture(emissiveMap, material.emissiveTextureSet == 0 ? inUV0 : inUV1).rgb : vec3(0.0f);
+				break;
+			case 5:
+				outColor.rgb = texture(physicalDescriptorMap, inUV0).bbb;
+				break;
+			case 6:
+				outColor.rgb = texture(physicalDescriptorMap, inUV0).ggg;
+				break;
+		}
+	}
+
+	// PBR equation debug visualization
+	// "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
+	if (uboParams.debugViewEquation > 0.0) {
+		int index = int(uboParams.debugViewEquation);
+		switch (index) {
+			case 1:
+				outColor.rgb = diffuse;
+				break;
+			case 2:
+				outColor.rgb = F;
+				break;
+			case 3:
+				outColor.rgb = vec3(G);
+				break;
+			case 4: 
+				outColor.rgb = vec3(D);
+				break;
+			case 5:
+				outColor.rgb = specular;
+				break;				
+		}
+	}
+
 }
