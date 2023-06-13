@@ -55,6 +55,19 @@ layout (push_constant) uniform Material {
 
 layout (location = 0) out vec4 outColor;
 
+#define SRGB 1
+
+vec4 SRGBtoLiner(vec4 srgb)
+{
+	#ifdef SRGB
+		vec3 bLess = step(vec3(0.04045),srgb.xyz);
+		vec3 linOut = mix( srgb.xyz/vec3(12.92), pow((srgb.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
+		return vec4(linOut,srgb.w);;
+	#else //SRGB
+		return srgb;
+	#endif //SRGB
+}
+
 vec3 GetNormal()
 {
 	vec3 tangentNormal = texture(normalMap, material.normalTextureSet == 0 ? inUV0 : inUV1).xyz * 2.0 - 1.0;
@@ -145,11 +158,11 @@ float G_Smith(float NdotV, float NdotL, float roughness)
 }
 
 vec3 IBL(vec3 diffuseColor, vec3 specularColor, vec3 n, vec3 reflection, float roughness, float NdotV){
-	vec3 diffuse = Tonemap(texture(samplerIrradiance,n)).rgb * diffuseColor;
+	vec3 diffuse = SRGBtoLiner(Tonemap(texture(samplerIrradiance,n))).rgb * diffuseColor;
 
 	vec3 brdf = texture(samplerBRDFLUT, vec2(NdotV, 1.0 - roughness)).rgb;
 	float lod = roughness * uboParams.prefilteredCubeMipLevels;
-	vec3 prefilteredColor = Tonemap(textureLod(prefilteredMap, reflection, lod)).rgb;
+	vec3 prefilteredColor = SRGBtoLiner(Tonemap(textureLod(prefilteredMap, reflection, lod))).rgb;
 	vec3 specular = prefilteredColor * (specularColor * brdf.r + brdf.g);
 
 	return diffuse + specular;
@@ -163,7 +176,7 @@ void main()
 
 	if (material.alphaMask == 1.0f) {
 		if (material.baseColorTextureSet > -1) {
-			baseColor = texture(colorMap, material.baseColorTextureSet == 0 ? inUV0 : inUV1) * material.baseColorFactor;
+			baseColor = SRGBtoLiner(texture(colorMap, material.baseColorTextureSet == 0 ? inUV0 : inUV1)) * material.baseColorFactor;
 		}
 		if (baseColor.a < material.alphaMaskCutoff) discard;
 	}
@@ -184,11 +197,13 @@ void main()
 
 		//base color
     	if (material.baseColorTextureSet > -1) {
-			baseColor = texture(colorMap, material.baseColorTextureSet == 0 ? inUV0 : inUV1) * material.baseColorFactor;
+			baseColor = SRGBtoLiner(texture(colorMap, material.baseColorTextureSet == 0 ? inUV0 : inUV1)) * material.baseColorFactor;
 		} else {
 			baseColor = material.baseColorFactor;
 		}
 	}
+	
+	baseColor *= inColor0;
 	
 	// Roughness is authored as perceptual roughness; as is convention,
 	// convert to material roughness by squaring the perceptual roughness.
@@ -231,7 +246,7 @@ void main()
 
 	//emissive
 	if (material.emissiveTextureSet > -1) {
-		vec3 emissive = texture(emissiveMap, material.emissiveTextureSet == 0 ? inUV0 : inUV1).rgb;
+		vec3 emissive = SRGBtoLiner(texture(emissiveMap, material.emissiveTextureSet == 0 ? inUV0 : inUV1)).rgb;
 		color += emissive;
 	}
 
@@ -260,6 +275,7 @@ void main()
 				outColor.rgb = texture(physicalDescriptorMap, inUV0).ggg;
 				break;
 		}
+		outColor = SRGBtoLiner(outColor);
 	}
 
 	// PBR equation debug visualization
