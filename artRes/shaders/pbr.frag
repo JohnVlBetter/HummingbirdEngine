@@ -122,6 +122,18 @@ const float MinRoughness = 0.04;
 const float PBR_MR = 0.0;
 const float PBR_SG = 1.0f;
 
+// Gets metallic from specular glossiness workflow 
+float ConvertToMetallic(vec3 diffuse, vec3 specular, float maxSpecular) {
+	float perceivedDiffuse = sqrt(0.299 * diffuse.r * diffuse.r + 0.587 * diffuse.g * diffuse.g + 0.114 * diffuse.b * diffuse.b);
+	float perceivedSpecular = sqrt(0.299 * specular.r * specular.r + 0.587 * specular.g * specular.g + 0.114 * specular.b * specular.b);
+	if (perceivedSpecular < MinRoughness) return 0.0;
+	float a = MinRoughness;
+	float b = perceivedDiffuse * (1.0 - maxSpecular) / (1.0 - MinRoughness) + perceivedSpecular - 2.0 * MinRoughness;
+	float c = MinRoughness - perceivedSpecular;
+	float d = max(b * b - 4.0 * a * c, 0.0);
+	return clamp((-b + sqrt(d)) / (2.0 * a), 0.0, 1.0);
+}
+
 vec3 Diffuse(vec3 diffuseColor){
     return diffuseColor / PI;
 }
@@ -136,7 +148,7 @@ float D_GGX(float NdotH, float roughness){
 	float NdotH2 = NdotH * NdotH;
 	float tmp = NdotH2 * (roughness2 - 1.0) + 1.0;
 	float denominator = PI * tmp * tmp;
-	denominator = max(denominator, 0.00001);
+	denominator = max(denominator, 1e-6);
 	return roughness2 / denominator;
 }
 
@@ -187,7 +199,7 @@ void main()
 		if (material.physicalDescriptorTextureSet > -1) {
 			// Roughness is stored in the 'g' channel, metallic is stored in the 'b' channel.
 			// This layout intentionally reserves the 'r' channel for (optional) occlusion map data
-			vec4 mrSample = texture(physicalDescriptorMap, material.physicalDescriptorTextureSet == 0 ? inUV0 : inUV1);
+			vec4 mrSample = SRGBtoLiner(texture(physicalDescriptorMap, material.physicalDescriptorTextureSet == 0 ? inUV0 : inUV1));
 			roughness = mrSample.g * roughness;
 			metallic = mrSample.b * metallic;
 		} else {
@@ -201,6 +213,29 @@ void main()
 		} else {
 			baseColor = material.baseColorFactor;
 		}
+	}
+
+	if (material.workflow == PBR_SG) {
+		// specular glossiness converted to metallic roughness
+		if (material.physicalDescriptorTextureSet > -1) {
+			roughness = 1.0 - texture(physicalDescriptorMap, material.physicalDescriptorTextureSet == 0 ? inUV0 : inUV1).a;
+		} else {
+			roughness = 0.0;
+		}
+
+		const float epsilon = 1e-6;
+
+		vec4 diffuse = SRGBtoLiner(texture(colorMap, inUV0));
+		vec3 specular = SRGBtoLiner(texture(physicalDescriptorMap, inUV0)).rgb;
+
+		float maxSpecular = max(max(specular.r, specular.g), specular.b);
+
+		// Convert metallic roughness from specular glossiness
+		metallic = ConvertToMetallic(diffuse.rgb, specular, maxSpecular);
+
+		vec3 baseColorDiffusePart = diffuse.rgb * ((1.0 - maxSpecular) / (1 - MinRoughness) / max(1 - metallic, epsilon)) * material.diffuseFactor.rgb;
+		vec3 baseColorSpecularPart = specular - (vec3(MinRoughness) * (1 - metallic) * (1 / max(metallic, epsilon))) * material.specularFactor.rgb;
+		baseColor = vec4(mix(baseColorDiffusePart, baseColorSpecularPart, metallic * metallic), diffuse.a);
 	}
 	
 	baseColor *= inColor0;
@@ -252,7 +287,6 @@ void main()
 
     outColor = vec4(color, baseColor.a);
 
-	// Shader inputs debug visualization
 	if (uboParams.debugViewInputs > 0.0) {
 		int index = int(uboParams.debugViewInputs);
 		switch (index) {
@@ -278,8 +312,7 @@ void main()
 		outColor = SRGBtoLiner(outColor);
 	}
 
-	// PBR equation debug visualization
-	// "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
+	// "None", "Diffuse", "F", "G", "D", "Specular"
 	if (uboParams.debugViewEquation > 0.0) {
 		int index = int(uboParams.debugViewEquation);
 		switch (index) {
