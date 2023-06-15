@@ -85,6 +85,7 @@ vec3 GetNormal()
 	return normalize(TBN * tangentNormal);
 }
 
+//http://filmicworlds.com/blog/filmic-tonemapping-operators/
 vec3 Tonemap_F(vec3 color)
 {
 	float A = 0.22;

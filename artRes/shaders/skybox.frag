@@ -12,45 +12,41 @@ layout (set = 0, binding = 1) uniform UBOParams {
 	float gamma;
 } uboParams;
 
-// From http://filmicworlds.com/blog/filmic-tonemapping-operators/
-vec3 Uncharted2Tonemap(vec3 color)
+#define SRGB 1
+
+vec3 Tonemap_F(vec3 color)
 {
-	float A = 0.15;
-	float B = 0.50;
+	float A = 0.22;
+	float B = 0.30;
 	float C = 0.10;
 	float D = 0.20;
-	float E = 0.02;
+	float E = 0.01;
 	float F = 0.30;
-	float W = 11.2;
-	return ((color*(A*color+C*B)+D*E)/(color*(A*color+B)+D*F))-E/F;
+
+	return ((color * (A * color + C * B) + D * E) / (color * (A * color + B) + D * F)) - E / F;
 }
 
-vec4 tonemap(vec4 color)
+vec4 Tonemap(vec4 color)
 {
-	vec3 outcol = Uncharted2Tonemap(color.rgb * uboParams.exposure);
-	outcol = outcol * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
+	vec3 outcol = Tonemap_F(color.rgb * uboParams.exposure);
+	outcol = outcol * (1.0f / Tonemap_F(vec3(11.2f)));	
+	//gamma correction
 	return vec4(pow(outcol, vec3(1.0f / uboParams.gamma)), color.a);
 }
 
-#define MANUAL_SRGB 1
-
-vec4 SRGBtoLINEAR(vec4 srgbIn)
+vec4 SRGBtoLiner(vec4 srgb)
 {
-	#ifdef MANUAL_SRGB
-	#ifdef SRGB_FAST_APPROXIMATION
-	vec3 linOut = pow(srgbIn.xyz,vec3(2.2));
-	#else //SRGB_FAST_APPROXIMATION
-	vec3 bLess = step(vec3(0.04045),srgbIn.xyz);
-	vec3 linOut = mix( srgbIn.xyz/vec3(12.92), pow((srgbIn.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
-	#endif //SRGB_FAST_APPROXIMATION
-	return vec4(linOut,srgbIn.w);;
-	#else //MANUAL_SRGB
-	return srgbIn;
-	#endif //MANUAL_SRGB
+	#ifdef SRGB
+		vec3 bLess = step(vec3(0.04045),srgb.xyz);
+		vec3 linOut = mix( srgb.xyz/vec3(12.92), pow((srgb.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
+		return vec4(linOut,srgb.w);;
+	#else //SRGB
+		return srgb;
+	#endif //SRGB
 }
 
 void main() 
 {
-	vec3 color = SRGBtoLINEAR(tonemap(textureLod(samplerEnv, inUVW, 1.5))).rgb;	
-	outColor = vec4(color * 1.0, 1.0);
+	vec3 color = SRGBtoLiner(Tonemap(textureLod(samplerEnv, inUVW, 1.5))).rgb;	
+	outColor = vec4(color, 1.0);
 }
