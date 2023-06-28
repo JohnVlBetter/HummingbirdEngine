@@ -12,6 +12,7 @@
 
 #include "VulkanDevice.hpp"
 #include "VulkanSwapChain.hpp"
+#include "RasteriztionRenderPipeline.hpp"
 
 #include "imgui/imgui.h"
 

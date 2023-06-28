@@ -101,6 +101,10 @@ public:
 		iconPath = GetTexturePath() + "icon.png";
 		width = 1920;
 		height = 1080;
+
+		std::shared_ptr<ScriptableRenderPipeline> rasteriztionRenderPipeline = std::make_shared<RasteriztionRenderPipeline>();
+		LOG_INFO("{}", rasteriztionRenderPipeline->name);
+		rasteriztionRenderPipeline->Render(new Camera());
 	}
 
 	~ApplicationExample()
