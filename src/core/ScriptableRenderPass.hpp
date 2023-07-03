@@ -114,5 +114,5 @@ public:
 	virtual ~ScriptableRenderPass() {
 	}
 
-	virtual void Execute(RenderingData renderingData) = 0;
+    virtual void Execute(RenderingData renderingData) {}
 };

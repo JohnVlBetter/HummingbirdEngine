@@ -17,5 +17,5 @@ public:
 	virtual ~ScriptableRenderPipeline() {
 	}
 
-	virtual void Render(Camera cameras[]) = 0;
+	virtual void Render(std::vector<Camera*> cameras) = 0;
 };

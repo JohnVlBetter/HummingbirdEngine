@@ -13,7 +13,21 @@ public:
 	~RasteriztionRenderPipeline() {
 	}
 
-	void Render(Camera cameras[]) {}
+	void Render(std::vector<Camera*> cameras) {
+		//SortCameras(cameras);
 
-	static void RenderSingleCamera(Camera camera) {}
+		for (int i = 0; i < cameras.size(); ++i) {
+			auto camera = cameras[i];
+			CameraData cameraData;
+			InitializeCameraData(camera, cameraData);
+			LOG_INFO("Camear Data:{}", cameraData.camera->type);
+			RenderSingleCamera(cameraData);
+		}
+	}
+
+	static void InitializeCameraData(Camera* camera, CameraData& cameraData) {
+		//test
+		cameraData.camera = camera;
+	}
+	static void RenderSingleCamera(CameraData camera) {}
 };

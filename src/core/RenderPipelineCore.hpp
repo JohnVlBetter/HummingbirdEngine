@@ -3,14 +3,6 @@
 #include "Camera.hpp"
 #include "Light.hpp"
 
-struct RenderingData
-{
-    CullingResults cullResults;
-    CameraData cameraData;
-    LightData lightData;
-    ShadowData shadowData;
-};
-
 struct CullingResults 
 {
     //todo
@@ -38,7 +30,7 @@ struct CameraData
         return m_ProjectionMatrix;
     }
 
-    Camera camera;
+    Camera* camera;
 };
 
 struct LightData
@@ -59,4 +51,12 @@ struct ShadowData
     int additionalLightsShadowmapWidth;
     int additionalLightsShadowmapHeight;
     bool supportsSoftShadows;
+};
+
+struct RenderingData
+{
+    CullingResults cullResults;
+    CameraData cameraData;
+    LightData lightData;
+    ShadowData shadowData;
 };

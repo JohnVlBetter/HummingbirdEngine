@@ -11,9 +11,9 @@ protected:
 public:
 	std::string name; 
 	
-	static std::shared_ptr<ScriptableRenderer> current;
-	static std::vector<ScriptableRendererFeature> rendererFeatures;
-	static std::vector<ScriptableRenderPass> activeRenderPasses;
+	std::shared_ptr<ScriptableRenderer> current;
+	std::vector<ScriptableRendererFeature> rendererFeatures;
+	std::vector<ScriptableRenderPass> activeRenderPasses;
 
 	ScriptableRenderer() {
 		name = "ScriptableRenderer";
@@ -42,5 +42,3 @@ public:
 	virtual void ExecuteRenderPass(ScriptableRenderPass renderPass, RenderingData renderingData) = 0;
 	virtual void Dispose(bool disposing) = 0;
 };
-
-std::shared_ptr<ScriptableRenderer> ScriptableRenderer::current = nullptr;

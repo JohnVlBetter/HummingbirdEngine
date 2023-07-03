@@ -4,6 +4,8 @@
 #include "RenderPipelineCore.hpp"
 #include "ScriptableRenderer.hpp"
 
+class ScriptableRenderer;
+
 class ScriptableRendererFeature
 {
 protected:
@@ -30,7 +32,7 @@ public:
 		Dispose(true);
 	}
 
-	virtual void AddRenderPasses(ScriptableRenderer renderer, RenderingData& renderingData) = 0;
+	virtual void AddRenderPasses(ScriptableRenderer* renderer, RenderingData& renderingData) = 0;
 	virtual void Dispose(bool disposing) = 0;
 	virtual void Create() = 0;
 };

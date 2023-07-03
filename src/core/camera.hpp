@@ -23,7 +23,7 @@ private:
 		updated = true;
 	};
 public:
-	enum CameraType { lookat, firstperson };
+	enum CameraType { firstperson, lookat };
 	CameraType type = CameraType::lookat;
 
 	std::shared_ptr<Transform> transform;
