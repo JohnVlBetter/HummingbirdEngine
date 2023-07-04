@@ -2,7 +2,7 @@
 
 #include "Macros.h"
 #include "Camera.hpp"
-#include "ScriptableRenderer.hpp"
+#include "ForwardRenderer.hpp"
 
 class ScriptableRenderPipeline
 {
@@ -17,5 +17,5 @@ public:
 	virtual ~ScriptableRenderPipeline() {
 	}
 
-	virtual void Render(std::vector<Camera*> cameras) = 0;
+	virtual void Render(std::vector<std::shared_ptr<Camera>> cameras) = 0;
 };

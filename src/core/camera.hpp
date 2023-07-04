@@ -25,6 +25,7 @@ private:
 public:
 	enum CameraType { firstperson, lookat };
 	CameraType type = CameraType::lookat;
+	std::string name;
 
 	std::shared_ptr<Transform> transform;
 
@@ -49,6 +50,7 @@ public:
 
 	Camera() {
 		transform = std::make_shared<Transform>();
+		name = "Main Camera";
 	}
 
 	bool moving()

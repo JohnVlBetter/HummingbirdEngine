@@ -14,11 +14,13 @@ public:
 	std::string name;
 
 	ScriptableRendererFeature() {
+		LOG_INFO("Create ScriptableRendererFeature");
 		name = "ScriptableRendererFeature";
 		isActive = true;
 	}
 
 	virtual ~ScriptableRendererFeature() {
+		LOG_INFO("Delete ScriptableRendererFeature");
 		Dispose();
 	}
 	

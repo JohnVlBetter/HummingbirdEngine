@@ -104,8 +104,7 @@ public:
 
 		std::shared_ptr<ScriptableRenderPipeline> rasteriztionRenderPipeline = std::make_shared<RasteriztionRenderPipeline>();
 		LOG_INFO("{}", rasteriztionRenderPipeline->name);
-		Camera* c = new Camera();
-		rasteriztionRenderPipeline->Render({ c });
+		rasteriztionRenderPipeline->Render({ std::make_shared<Camera>()});
 	}
 
 	~ApplicationExample()

@@ -101,18 +101,21 @@ enum ScriptableRenderPassInput
 
 class ScriptableRenderPass
 {
-protected:
 public:
 	std::string name;
 
     RenderPassEvent renderPassEvent;
 
 	ScriptableRenderPass() {
+        LOG_INFO("Create ScriptableRenderPipeline");
 		name = "ScriptableRenderPipeline";
 	}
 
 	virtual ~ScriptableRenderPass() {
+        LOG_INFO("Delete ScriptableRenderPipeline");
 	}
 
-    virtual void Execute(RenderingData renderingData) {}
+    virtual void Execute(RenderingData renderingData) {
+        LOG_INFO("Execute ScriptableRenderPipeline");
+    }
 };

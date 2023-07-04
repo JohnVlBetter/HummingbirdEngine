@@ -3,14 +3,18 @@
 #include "Camera.hpp"
 #include "Light.hpp"
 
-struct CullingResults 
+class ScriptableRenderer;
+
+class CullingResults
 {
+public:
     //todo
     int count;
 };
 
-struct CameraData
+class CameraData
 {
+public:
     glm::mat4x4 m_ViewMatrix;
     glm::mat4x4 m_ProjectionMatrix;
 
@@ -30,11 +34,13 @@ struct CameraData
         return m_ProjectionMatrix;
     }
 
-    Camera* camera;
+    std::shared_ptr<Camera> camera;
+    std::shared_ptr<ScriptableRenderer> renderer;
 };
 
-struct LightData
+class LightData
 {
+public:
     int mainLightIndex;
     int additionalLightsCount;
     int maxPerObjectAdditionalLightsCount;
@@ -42,8 +48,9 @@ struct LightData
     bool supportsAdditionalLights;
 };
 
-struct ShadowData
+class ShadowData
 {
+public:
     bool supportsMainLightShadows;
     int mainLightShadowmapWidth;
     int mainLightShadowmapHeight;
@@ -53,10 +60,11 @@ struct ShadowData
     bool supportsSoftShadows;
 };
 
-struct RenderingData
+class RenderingData
 {
-    CullingResults cullResults;
-    CameraData cameraData;
-    LightData lightData;
-    ShadowData shadowData;
+public:
+    std::shared_ptr<CullingResults> cullResults;
+    std::shared_ptr<CameraData> cameraData;
+    std::shared_ptr<LightData> lightData;
+    std::shared_ptr<ShadowData> shadowData;
 };
