@@ -111,11 +111,16 @@ public:
 		name = "ScriptableRenderPipeline";
 	}
 
+    ScriptableRenderPass(ScriptableRenderPass&& pass) {
+        name = pass.name;
+        renderPassEvent = pass.renderPassEvent;
+    }
+
 	virtual ~ScriptableRenderPass() {
         LOG_INFO("Delete ScriptableRenderPipeline");
 	}
 
-    virtual void Execute(RenderingData renderingData) {
-        LOG_INFO("Execute ScriptableRenderPipeline");
-    }
+    virtual void Configure(){}
+
+    virtual void Execute(std::shared_ptr<RenderingData> renderingData) = 0;
 };

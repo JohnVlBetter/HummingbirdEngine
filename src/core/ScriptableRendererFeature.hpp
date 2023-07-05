@@ -8,10 +8,9 @@ class ScriptableRenderer;
 
 class ScriptableRendererFeature
 {
-protected:
-	bool isActive;
 public:
 	std::string name;
+	bool isActive;
 
 	ScriptableRendererFeature() {
 		LOG_INFO("Create ScriptableRendererFeature");
@@ -34,7 +33,7 @@ public:
 		Dispose(true);
 	}
 
-	virtual void AddRenderPasses(ScriptableRenderer* renderer, RenderingData& renderingData) = 0;
+	virtual void AddRenderPasses(ScriptableRenderer* renderer, std::shared_ptr<RenderingData> renderingData) = 0;
 	virtual void Dispose(bool disposing) = 0;
 	virtual void Create() = 0;
 };

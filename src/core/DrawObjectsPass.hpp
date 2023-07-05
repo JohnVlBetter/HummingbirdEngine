@@ -15,7 +15,11 @@ public:
 		LOG_INFO("Delete DrawObjectsPass");
 	}
 
-    void Execute(RenderingData renderingData) {
+	void Configure() {
+		
+	}
+
+    void Execute(std::shared_ptr<RenderingData> renderingData) {
 		LOG_INFO("Execute DrawObjectsPass");
 	}
 };
