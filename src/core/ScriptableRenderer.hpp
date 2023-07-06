@@ -35,7 +35,23 @@ public:
 	//void SetShaderTimeValues(/*CommandBuffer cmd, */CameraData cameraData) {}
 	virtual void AddRenderPasses(std::shared_ptr<RenderingData> renderingData) = 0;
 
+	void StableSortPass(std::vector<std::shared_ptr<ScriptableRenderPass>>& list)
+	{
+		int j;
+		for (int i = 1; i < list.size(); ++i)
+		{
+			std::shared_ptr<ScriptableRenderPass> curr = list[i];
+			j = i - 1;
+			for (; j >= 0 && curr->renderPassEvent < list[j]->renderPassEvent; --j)
+				list[j + 1] = list[j];
+
+			list[j + 1] = curr;
+		}
+	}
+
 	virtual void Execute(std::shared_ptr<RenderingData> renderingData) {
+		StableSortPass(activeRenderPasses);
+
 		SetupLights(renderingData);
 
 		for (auto pass : activeRenderPasses) {

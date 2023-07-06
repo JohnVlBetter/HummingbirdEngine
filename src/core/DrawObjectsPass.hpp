@@ -9,6 +9,7 @@ public:
 	DrawObjectsPass() {
 		LOG_INFO("Create DrawObjectsPass");
 		name = "DrawObjectsPass";
+		renderPassEvent = BeforeRenderingShadows;
 	}
 
 	~DrawObjectsPass() {

@@ -9,6 +9,7 @@ public:
 	DrawSkyboxPass() {
 		LOG_INFO("Create DrawSkyboxPass");
 		name = "DrawSkyboxPass";
+		renderPassEvent = BeforeRenderingSkybox;
 	}
 
 	~DrawSkyboxPass() {

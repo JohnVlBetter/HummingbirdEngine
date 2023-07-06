@@ -111,11 +111,6 @@ public:
 		name = "ScriptableRenderPipeline";
 	}
 
-    ScriptableRenderPass(ScriptableRenderPass&& pass) {
-        name = pass.name;
-        renderPassEvent = pass.renderPassEvent;
-    }
-
 	virtual ~ScriptableRenderPass() {
         LOG_INFO("Delete ScriptableRenderPipeline");
 	}
