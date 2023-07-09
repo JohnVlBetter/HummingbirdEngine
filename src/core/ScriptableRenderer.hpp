@@ -4,9 +4,15 @@
 #include "RenderPipelineCore.hpp"
 #include "ScriptableRendererFeature.hpp"
 #include "ScriptableRenderPass.hpp"
+#include "RenderBlocks.hpp"
 
 class ScriptableRenderer
 {
+private:
+	int MainRenderingOpaque = 0;
+	int MainRenderingTransparent = 1;
+	int AfterRendering = 2;
+
 public:
 	std::string name; 
 
@@ -30,9 +36,22 @@ public:
 		activeRenderPasses.emplace_back(pass);
 	}
 
-	void SetCameraMatrices(/*CommandBuffer cmd, */std::shared_ptr<CameraData> cameraData, bool setInverseMatrices) {}
-	void SetPerCameraShaderVariables(/*CommandBuffer cmd, */std::shared_ptr<CameraData> cameraData) {}
-	//void SetShaderTimeValues(/*CommandBuffer cmd, */CameraData cameraData) {}
+	void SetCameraMatrices(/*CommandBuffer cmd, */std::shared_ptr<CameraData> cameraData) {
+		//Matrix4x4 viewMatrix = cameraData.GetViewMatrix();
+		//Matrix4x4 projectionMatrix = cameraData.GetProjectionMatrix();
+
+		// TODO: Investigate why SetViewAndProjectionMatrices is causing y-flip / winding order issue
+		// for now using cmd.SetViewProjecionMatrices
+		//SetViewAndProjectionMatrices(cmd, viewMatrix, cameraData.GetDeviceProjectionMatrix(), setInverseMatrices);
+		//cmd.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
+	}
+	
+	void SetPerCameraShaderVariables(/*CommandBuffer cmd, */std::shared_ptr<CameraData> cameraData) {
+		//SetGlobalVector(ShaderPropertyId.projectionParams, projectionParams);
+		SetCameraMatrices(cameraData);
+	}
+
+	void SetShaderTimeValues(/*CommandBuffer cmd, */std::shared_ptr<CameraData> cameraData) {}
 	virtual void AddRenderPasses(std::shared_ptr<RenderingData> renderingData) = 0;
 
 	void StableSortPass(std::vector<std::shared_ptr<ScriptableRenderPass>>& list)
@@ -50,12 +69,26 @@ public:
 	}
 
 	virtual void Execute(std::shared_ptr<RenderingData> renderingData) {
+
 		StableSortPass(activeRenderPasses);
 
 		SetupLights(renderingData);
+		SetShaderTimeValues(renderingData->cameraData);
+		SetPerCameraShaderVariables(renderingData->cameraData);
 
-		for (auto pass : activeRenderPasses) {
-			ExecuteRenderPass(pass, renderingData);
+		auto renderBlocks = new RenderBlocks(activeRenderPasses);
+
+		ExecuteBlock(renderBlocks, MainRenderingOpaque, renderingData);
+		ExecuteBlock(renderBlocks, MainRenderingTransparent, renderingData);
+		ExecuteBlock(renderBlocks, AfterRendering, renderingData);
+	}
+
+	void ExecuteBlock(RenderBlocks* renderBlocks, int blockIdx, std::shared_ptr<RenderingData> renderingData) {
+		int start, length;
+		renderBlocks->GetRange(start, length, blockIdx);
+		
+		for (int idx = start; idx < length + start; ++idx) {
+			ExecuteRenderPass(activeRenderPasses[idx], renderingData);
 		}
 	}
 
@@ -72,4 +105,5 @@ public:
 	virtual void Setup(std::shared_ptr<RenderingData> renderingData) = 0;
 	virtual void SetupLights(std::shared_ptr<RenderingData> renderingData) = 0;
 	virtual void Dispose(bool disposing) = 0;
+	virtual void Clear() = 0;
 };

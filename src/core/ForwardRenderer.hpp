@@ -45,4 +45,5 @@ public:
 	}
 
 	void Dispose(bool disposing) {}
+	void Clear() {}
 };

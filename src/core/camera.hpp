@@ -34,6 +34,8 @@ public:
 
 	bool updated = false;
 
+	bool depth;
+
 	struct
 	{
 		glm::mat4 perspective;

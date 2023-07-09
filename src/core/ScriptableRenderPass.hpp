@@ -25,6 +25,12 @@ enum RenderPassEvent
     AfterRenderingShadows = 100,
 
     /// <summary>
+    /// Executes a <c>ScriptableRenderPass</c> before rendering prepasses, f.ex, depth prepass.
+    /// Camera matrices and stereo rendering are already setup at this point.
+    /// </summary>
+    BeforeRenderingPrePasses = 150,
+
+    /// <summary>
     /// Executes a <c>ScriptableRenderPass</c> before rendering gbuffer pass.
     /// </summary>
     BeforeRenderingGbuffer = 210,
