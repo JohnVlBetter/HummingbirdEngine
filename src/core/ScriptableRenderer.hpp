@@ -16,8 +16,8 @@ private:
 public:
 	std::string name; 
 
-	std::vector<ScriptableRendererFeature> rendererFeatures;
-	std::vector<std::shared_ptr<ScriptableRenderPass>> activeRenderPasses;
+	std::vector<ScriptableRendererFeature*> rendererFeatures;
+	std::vector<ScriptableRenderPass*> activeRenderPasses;
 
 	ScriptableRenderer() {
 		name = "ScriptableRenderer";
@@ -31,12 +31,12 @@ public:
 		Dispose(true);
 	}
 
-	void EnqueuePass(std::shared_ptr<ScriptableRenderPass> pass)
+	void EnqueuePass(ScriptableRenderPass* pass)
 	{
 		activeRenderPasses.emplace_back(pass);
 	}
 
-	void SetCameraMatrices(/*CommandBuffer cmd, */std::shared_ptr<CameraData> cameraData) {
+	void SetCameraMatrices(/*CommandBuffer cmd, */CameraData* cameraData) {
 		//Matrix4x4 viewMatrix = cameraData.GetViewMatrix();
 		//Matrix4x4 projectionMatrix = cameraData.GetProjectionMatrix();
 
@@ -46,20 +46,20 @@ public:
 		//cmd.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
 	}
 	
-	void SetPerCameraShaderVariables(/*CommandBuffer cmd, */std::shared_ptr<CameraData> cameraData) {
+	void SetPerCameraShaderVariables(/*CommandBuffer cmd, */CameraData* cameraData) {
 		//SetGlobalVector(ShaderPropertyId.projectionParams, projectionParams);
 		SetCameraMatrices(cameraData);
 	}
 
-	void SetShaderTimeValues(/*CommandBuffer cmd, */std::shared_ptr<CameraData> cameraData) {}
-	virtual void AddRenderPasses(std::shared_ptr<RenderingData> renderingData) = 0;
+	void SetShaderTimeValues(/*CommandBuffer cmd, */CameraData* cameraData) {}
+	virtual void AddRenderPasses() = 0;
 
-	void StableSortPass(std::vector<std::shared_ptr<ScriptableRenderPass>>& list)
+	void StableSortPass(std::vector<ScriptableRenderPass*>& list)
 	{
 		int j;
 		for (int i = 1; i < list.size(); ++i)
 		{
-			std::shared_ptr<ScriptableRenderPass> curr = list[i];
+			ScriptableRenderPass* curr = list[i];
 			j = i - 1;
 			for (; j >= 0 && curr->renderPassEvent < list[j]->renderPassEvent; --j)
 				list[j + 1] = list[j];
@@ -68,7 +68,7 @@ public:
 		}
 	}
 
-	virtual void Execute(std::shared_ptr<RenderingData> renderingData) {
+	virtual void Execute(RenderingData* renderingData) {
 
 		StableSortPass(activeRenderPasses);
 
@@ -83,7 +83,7 @@ public:
 		ExecuteBlock(renderBlocks, AfterRendering, renderingData);
 	}
 
-	void ExecuteBlock(RenderBlocks* renderBlocks, int blockIdx, std::shared_ptr<RenderingData> renderingData) {
+	void ExecuteBlock(RenderBlocks* renderBlocks, int blockIdx, RenderingData* renderingData) {
 		int start, length;
 		renderBlocks->GetRange(start, length, blockIdx);
 		
@@ -92,9 +92,9 @@ public:
 		}
 	}
 
-	void SetRenderPassAttachments(std::shared_ptr<ScriptableRenderPass> renderPass, std::shared_ptr<CameraData> cameraData) {}
+	void SetRenderPassAttachments(ScriptableRenderPass* renderPass, CameraData* cameraData) {}
 
-	void ExecuteRenderPass(std::shared_ptr<ScriptableRenderPass> renderPass, std::shared_ptr<RenderingData> renderingData) {
+	void ExecuteRenderPass(ScriptableRenderPass* renderPass, RenderingData* renderingData) {
 		renderPass->Configure();
 
 		SetRenderPassAttachments(renderPass, renderingData->cameraData);
@@ -102,8 +102,8 @@ public:
 		renderPass->Execute(renderingData);
 	}
 
-	virtual void Setup(std::shared_ptr<RenderingData> renderingData) = 0;
-	virtual void SetupLights(std::shared_ptr<RenderingData> renderingData) = 0;
+	virtual void Setup() = 0;
+	virtual void SetupLights(RenderingData* renderingData) = 0;
 	virtual void Dispose(bool disposing) = 0;
 	virtual void Clear() = 0;
 };

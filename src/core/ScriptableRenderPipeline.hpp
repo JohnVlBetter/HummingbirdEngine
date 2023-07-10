@@ -9,9 +9,11 @@ class ScriptableRenderPipeline
 protected:
 public:
 	std::string name;
+	std::shared_ptr<ForwardRenderer> renderer;
 
 	ScriptableRenderPipeline() {
 		name = "ScriptableRenderPipeline";
+		renderer = std::make_shared<ForwardRenderer>();
 	}
 
 	virtual ~ScriptableRenderPipeline() {

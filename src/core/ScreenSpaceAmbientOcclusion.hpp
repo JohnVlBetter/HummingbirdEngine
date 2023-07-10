@@ -7,7 +7,7 @@
 class ScreenSpaceAmbientOcclusion : public ScriptableRendererFeature
 {
 public:
-	std::shared_ptr<ScreenSpaceAmbientOcclusionPass> pass;
+	ScreenSpaceAmbientOcclusionPass* pass;
 
 	ScreenSpaceAmbientOcclusion() {
 		LOG_INFO("Create ScreenSpaceAmbientOcclusion");
@@ -30,13 +30,14 @@ public:
 		Dispose(true);
 	}
 
-	virtual void AddRenderPasses(ScriptableRenderer* renderer, std::shared_ptr<RenderingData> renderingData) {
+	virtual void AddRenderPasses(ScriptableRenderer* renderer) {
 		pass->Setup();
 		renderer->EnqueuePass(pass);
 	}
 	virtual void Dispose(bool disposing) {
+		delete pass;
 	}
 	virtual void Create() {
-		pass = std::make_shared<ScreenSpaceAmbientOcclusionPass>();
+		pass = new ScreenSpaceAmbientOcclusionPass();
 	}
 };

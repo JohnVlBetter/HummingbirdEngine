@@ -8,7 +8,7 @@ public:
 	std::vector<int> blockLength;
 	std::vector<RenderPassEvent> blockEventLimits;
 
-	RenderBlocks(std::vector<std::shared_ptr<ScriptableRenderPass>>& activeRenderPasses)
+	RenderBlocks(std::vector<ScriptableRenderPass*>& activeRenderPasses)
 	{
 		blockEventLimits = std::vector<RenderPassEvent>(3);
 		blockStart = std::vector<int>(blockEventLimits.size());

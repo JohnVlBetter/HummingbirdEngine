@@ -58,6 +58,7 @@ protected:
 	
 public:
 	std::shared_ptr<FPSTimer> fpsTimer;
+	std::shared_ptr<ScriptableRenderPipeline> rasteriztionRenderPipeline;
 	std::shared_ptr<Camera> camera;
 
 	bool prepared = false;

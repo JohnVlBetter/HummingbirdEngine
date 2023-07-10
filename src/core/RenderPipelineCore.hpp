@@ -63,8 +63,17 @@ public:
 class RenderingData
 {
 public:
-    std::shared_ptr<CullingResults> cullResults;
-    std::shared_ptr<CameraData> cameraData;
-    std::shared_ptr<LightData> lightData;
-    std::shared_ptr<ShadowData> shadowData;
+    CullingResults* cullResults;
+    CameraData* cameraData;
+    LightData* lightData;
+    ShadowData* shadowData;
+
+    RenderingData() {}
+
+    ~RenderingData() {
+        delete cullResults;
+        delete cameraData;
+        delete lightData;
+        delete shadowData;
+    }
 };

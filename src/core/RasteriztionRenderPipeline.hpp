@@ -11,6 +11,8 @@ private:
 public:
 	RasteriztionRenderPipeline() {
 		name = "RasteriztionRenderPipeline";
+
+		renderer->Setup();
 	}
 
 	~RasteriztionRenderPipeline() {
@@ -32,27 +34,27 @@ public:
 
 		for (int i = 0; i < cameras.size(); ++i) {
 			auto camera = cameras[i];
-			std::shared_ptr<CameraData> cameraData = std::make_shared<CameraData>();
+			CameraData* cameraData = new CameraData();
 			InitializeCameraData(camera, cameraData);
 			RenderSingleCamera(cameraData);
 		}
 	}
 
-	static void InitializeCameraData(std::shared_ptr<Camera> camera, std::shared_ptr<CameraData> cameraData) {
+	void InitializeCameraData(std::shared_ptr<Camera> camera, CameraData* cameraData) {
 		//test
 		cameraData->camera = camera;
-		cameraData->renderer = std::make_shared<ForwardRenderer>();
+		cameraData->renderer = renderer;
 	}
 
-	static std::shared_ptr<RenderingData> InitializeRenderingData(std::shared_ptr<CameraData> cameraData, std::shared_ptr<CullingResults> camera) {
-		return std::make_shared<RenderingData>();
+	static RenderingData* InitializeRenderingData(CameraData* cameraData, CullingResults* cullingResult) {
+		return new RenderingData();
 	}
 	
-	static std::shared_ptr<CullingResults> Cull() {
-		return std::make_shared<CullingResults>();
+	static CullingResults* Cull() {
+		return new CullingResults();
 	}
 
-	static void RenderSingleCamera(std::shared_ptr<CameraData> cameraData) {
+	static void RenderSingleCamera(CameraData* cameraData) {
 		auto camera = cameraData->camera;
 		auto renderer = cameraData->renderer;
 
@@ -66,8 +68,6 @@ public:
 		auto cullingResult = Cull();
 
 		auto renderingData = InitializeRenderingData(cameraData, cullingResult);
-
-		renderer->Setup(renderingData);
 
 		renderer->Execute(renderingData);
 	}

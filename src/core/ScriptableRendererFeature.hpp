@@ -33,7 +33,7 @@ public:
 		Dispose(true);
 	}
 
-	virtual void AddRenderPasses(ScriptableRenderer* renderer, std::shared_ptr<RenderingData> renderingData) = 0;
+	virtual void AddRenderPasses(ScriptableRenderer* renderer) = 0;
 	virtual void Dispose(bool disposing) = 0;
 	virtual void Create() = 0;
 };

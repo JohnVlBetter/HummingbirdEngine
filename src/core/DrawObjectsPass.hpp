@@ -20,7 +20,7 @@ public:
 		
 	}
 
-    void Execute(std::shared_ptr<RenderingData> renderingData) {
+    void Execute(RenderingData* renderingData) {
 		LOG_INFO("Execute DrawObjectsPass");
 	}
 };

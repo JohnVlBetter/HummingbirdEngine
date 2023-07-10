@@ -57,6 +57,8 @@ static void dropFileCallback(GLFWwindow* window, int count, const char** paths) 
 ApplicationBase::ApplicationBase()
 {
 	fpsTimer = std::make_shared<FPSTimer>();
+
+	rasteriztionRenderPipeline = std::make_shared<RasteriztionRenderPipeline>();
 }
 
 ApplicationBase::~ApplicationBase()
@@ -536,6 +538,8 @@ void ApplicationBase::mainLoop() {
 		processInput();
 		logicTick();
 		renderTick();
+
+		rasteriztionRenderPipeline->Render({ std::make_shared<Camera>() });
 
 		glfwSwapBuffers(glfwWindow);
 		glfwPollEvents();

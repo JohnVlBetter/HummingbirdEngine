@@ -3,47 +3,58 @@
 #include "ScriptableRenderer.hpp"
 #include "DrawObjectsPass.hpp"
 #include "DrawSkyboxPass.hpp"
+#include "ScreenSpaceAmbientOcclusion.hpp"
 
 class ForwardRenderer : public ScriptableRenderer
 {
 public:
-	std::shared_ptr<DrawSkyboxPass> drawSkyboxPass;
-	std::shared_ptr<DrawObjectsPass> renderOpaqueForwardPass;
-	std::shared_ptr<DrawObjectsPass> renderTransparentForwardPass;
+	DrawSkyboxPass* drawSkyboxPass;
+	DrawObjectsPass* renderOpaqueForwardPass;
+	DrawObjectsPass* renderTransparentForwardPass;
 
 	ForwardRenderer() {
 		LOG_INFO("Create ForwardRenderer");
 		name = "ForwardRenderer";
-		drawSkyboxPass = std::make_shared<DrawSkyboxPass>();
-		renderOpaqueForwardPass = std::make_shared<DrawObjectsPass>();
-		renderTransparentForwardPass = std::make_shared<DrawObjectsPass>();
+		drawSkyboxPass = new DrawSkyboxPass();
+		renderOpaqueForwardPass = new DrawObjectsPass();
+		renderTransparentForwardPass = new DrawObjectsPass();
+
+		rendererFeatures.emplace_back(new ScreenSpaceAmbientOcclusion());
 	}
 
 	~ForwardRenderer() {
 		LOG_INFO("Delete ForwardRenderer");
 	}
 
-	void Setup(std::shared_ptr<RenderingData> renderingData) {
-		AddRenderPasses(renderingData);
+	void Setup() {
+		for (const auto& rf : rendererFeatures) {
+			rf->Create();
+		}
+
+		AddRenderPasses();
 
 		EnqueuePass(drawSkyboxPass);
 		EnqueuePass(renderOpaqueForwardPass);
 		EnqueuePass(renderTransparentForwardPass);
 	}
-	void SetupLights(std::shared_ptr<RenderingData> renderingData) {}
+	void SetupLights(RenderingData* renderingData) {}
 
-	void AddRenderPasses(std::shared_ptr<RenderingData> renderingData) {
+	void AddRenderPasses() {
 		for (int i = 0; i < rendererFeatures.size(); ++i)
 		{
-			if (!rendererFeatures[i].isActive)
+			if (!rendererFeatures[i]->isActive)
 			{
 				continue;
 			}
 
-			rendererFeatures[i].AddRenderPasses(this, renderingData);
+			rendererFeatures[i]->AddRenderPasses(this);
 		}
 	}
 
-	void Dispose(bool disposing) {}
+	void Dispose(bool disposing) {
+		delete renderTransparentForwardPass;
+		delete renderOpaqueForwardPass;
+		delete drawSkyboxPass;
+	}
 	void Clear() {}
 };
