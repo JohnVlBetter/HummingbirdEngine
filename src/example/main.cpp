@@ -747,6 +747,8 @@ public:
 			VK_CHECK_RESULT(acquire);
 		}
 
+		rasteriztionRenderPipeline->Render({ camera });
+
 		// Update UBOs
 		updateUniformBuffers();
 		UniformBufferSet currentUB = uniformBuffers[currentBuffer];

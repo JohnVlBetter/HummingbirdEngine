@@ -539,8 +539,6 @@ void ApplicationBase::mainLoop() {
 		logicTick();
 		renderTick();
 
-		rasteriztionRenderPipeline->Render({ std::make_shared<Camera>() });
-
 		glfwSwapBuffers(glfwWindow);
 		glfwPollEvents();
 	}
